@@ -1,0 +1,1614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fit Forge - Prototype</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background-color: #252526;
+            border: 1px solid #333;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            margin: 10px;
+            display: flex;
+            flex-direction: column;
+            min-height: calc(100vh - 40px); 
+        }
+
+        header {
+            background-color: #333;
+            color: #00aaff;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.5em;
+            border-bottom: 1px solid #444;
+        }
+
+        .game-log-container {
+            flex-grow: 1;
+            padding: 15px;
+            border-bottom: 1px solid #444;
+            overflow-y: auto;
+            max-height: 180px; 
+            display: flex;
+            flex-direction: column-reverse; 
+        }
+        .game-log-container p {
+            margin: 5px 0;
+            line-height: 1.4;
+        }
+
+        .stats-display {
+            padding: 15px;
+            background-color: #2a2a2b;
+            border-bottom: 1px solid #444;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 10px;
+            font-size: 0.9em;
+        }
+        .stats-display div {
+            padding: 5px;
+            background-color: #333;
+            border-radius: 4px;
+        }
+
+        .main-content {
+            padding: 20px;
+            flex-grow: 2; 
+            overflow-y: auto; 
+        }
+        .main-content h2 {
+            color: #00aaff;
+            margin-top: 0;
+        }
+        .main-content h3 {
+            color: #00cc88;
+            margin-top: 15px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
+        }
+         .main-content h4 {
+            color: #aaddff;
+            margin-top: 10px;
+            margin-bottom: 5px;
+        }
+        .main-content .intro-text { 
+            font-style: italic;
+            color: #b0b0b0;
+            margin-bottom: 15px;
+        }
+        .main-content input[type="text"] { 
+            background-color: #333;
+            color: #d4d4d4;
+            border: 1px solid #555;
+            padding: 8px;
+            margin-bottom: 10px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+
+        .controls button, input[type="number"], select {
+            background-color: #007acc;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .controls button:hover {
+            background-color: #005fa3;
+        }
+        .controls button:active { 
+            background-color: #004c8c;
+        }
+        .controls button:disabled {
+            background-color: #555 !important; 
+            color: #888 !important;
+            cursor: not-allowed;
+        }
+        .controls {
+            padding: 15px;
+            text-align: center;
+            border-top: 1px solid #444;
+            background-color: #2a2a2b;
+        }
+        .controls .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+         .controls .tab-buttons button { 
+            background-color: #4e4e50;
+            flex-grow: 1;
+        }
+        .controls .tab-buttons button.active {
+            background-color: #007acc;
+        }
+        
+        input[type="number"] {
+            width: 60px; 
+            text-align: center;
+            background-color: #333;
+            border: 1px solid #555;
+            color: #d4d4d4;
+        }
+        .exercise-input-group button {
+            font-size: 1em; 
+            padding: 5px 10px;
+            margin: 0 3px;
+        }
+
+
+        .item-details, .skill-item, .stat-item { 
+            background-color: #333;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border: 1px solid #444;
+        }
+        .item-details button, .skill-item button, .stat-item button {
+            margin-left: 10px;
+            padding: 8px 12px; 
+            font-size: 0.9em;
+        }
+        .item-details .sell-button {
+            background-color: #c33;
+        }
+        .item-details .sell-button:hover {
+            background-color: #a00;
+        }
+        .item-stats, .skill-prereqs, .skill-details { 
+            font-size: 0.85em;
+            color: #aaa;
+            margin-top: 5px;
+            display: block; 
+        }
+        .monster-info { /* For displaying monster info in combat */
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #3a3a3d;
+            border-radius: 4px;
+            border: 1px solid #555;
+        }
+        .monster-info h4 {
+            margin-top: 0;
+            color: #ffdd99; /* Monster name color */
+        }
+        .filters-container { 
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        .filters-container button { 
+            font-size: 0.9em;
+            padding: 5px 10px;
+            margin-right: 5px;
+            margin-bottom: 10px; 
+            background-color: #444;
+        }
+        .filters-container button.active {
+            background-color: #007acc;
+        }
+
+        .debug-button {
+            background-color: #5c2a9d !important; 
+        }
+        .debug-button:hover {
+            background-color: #4a1f80 !important;
+        }
+        
+        .inventory-item-equipped { 
+            background-color: #4a4a4d; 
+            border-left: 3px solid #00aaff;
+        }
+
+
+        /* Utility classes */
+        .hidden { display: none !important; }
+        .error { color: #ff6666; }
+        .success { color: #66ff66; }
+        .info { color: #66ccff; }
+        .warning { color: #ffcc66; }
+        
+        /* Specific screen styling */
+        #exerciseLogScreen label {
+            display: inline-block; 
+            margin-right: 10px;
+            width: 150px; 
+            text-align: right;
+        }
+        #exerciseLogScreen div {
+            margin-bottom: 15px;
+            display: flex; 
+            align-items: center;
+            justify-content: center; 
+        }
+         #exerciseLogScreen input[type="number"] {
+            margin-right: 5px;
+        }
+        #exerciseLogScreen .cap-explanation {
+            font-size: 0.9em;
+            color: #ccc;
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #2c2c2e;
+            border-radius: 4px;
+            text-align: left;
+            display: block; 
+        }
+        #exerciseLogScreen .cap-explanation ul {
+            margin-top: 5px;
+            margin-bottom: 5px;
+            padding-left: 20px;
+        }
+         #exerciseLogScreen .cap-explanation li {
+            margin-bottom: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header id="gameHeader">Fit Forge</header>
+
+        <div class="stats-display" id="statsDisplay">
+            <!-- Stats will be rendered here by JS -->
+        </div>
+
+        <div class="game-log-container" id="gameLogContainer">
+            <!-- Game log messages will be rendered here by JS -->
+        </div>
+
+        <div class="main-content" id="mainContent">
+            <!-- Main game content will be rendered here by JS -->
+        </div>
+
+        <div class="controls" id="controls">
+            <!-- Game controls will be rendered here by JS -->
+        </div>
+    </div>
+
+    <script>
+        // --- GAME DATA DEFINITIONS ---
+        const BASE_HP = 50;
+        const BASE_STAMINA = 30;
+        const BASE_MANA = 30;
+
+        const STAT_COST_BASE = 15;
+        const STAT_COST_MULTIPLIER = 1.25;
+
+        const SKILL_COSTS_TIERED = {
+            1: { unlock: 50, level2: 37, level3: 63 }, 
+            2: { unlock: 120, level2: 90, level3: 150 },
+            3: { unlock: 300, level2: 225, level3: 375 }
+        };
+        
+        const ACTIVE_SKILL_USAGE_COSTS = { 1: 15, 2: 25, 3: 40 }; 
+        const DAILY_GP_CAP_FROM_EXERCISE = 150;
+        
+        const SKILL_DATA = {
+            "Power Strike": { name: "Power Strike", class: "Vanguard", tier: 1, type: "Active", resource: "Stamina", description: "A focused melee attack.", prerequisites: { STR: 2 }, levels: [{ level: 1, effectText: "Deals 125% weapon damage.", multiplier: 1.25 },{ level: 2, effectText: "Deals 135% weapon damage.", multiplier: 1.35 },{ level: 3, effectText: "Deals 150% weapon damage.", multiplier: 1.50 }]},
+            "Battle Rush": { name: "Battle Rush", class: "Vanguard", tier: 1, type: "Active", resource: "Stamina", description: "Quickly close distance for a swift attack.", prerequisites: { STR: 3, AGI: 2 }, levels: [{ level: 1, effectText: "85% weapon damage, +10% hit chance.", baseMultiplier: 0.85, hitBonus: 0.10 },{ level: 2, effectText: "95% weapon damage, +12% hit chance.", baseMultiplier: 0.95, hitBonus: 0.12 },{ level: 3, effectText: "105% weapon damage, +15% hit chance.", baseMultiplier: 1.05, hitBonus: 0.15 }]},
+            "Warriors Mettle": { name: "Warriors Mettle", class: "Vanguard", tier: 1, type: "Passive", description: "Increases base STR.", prerequisites: { STR: 4 }, levels: [ { level: 1, effectText: "+3 STR.", strBonus: 3 }, { level: 2, effectText: "+5 STR.", strBonus: 5 }, { level: 3, effectText: "+7 STR.", strBonus: 7 }]},
+            "Sundering Blow": { name: "Sundering Blow", class: "Vanguard", tier: 2, type: "Active", resource: "Stamina", description: "Heavy attack, reduces enemy defense.", prerequisites: { STR: 8, "Power Strike": 2 }, levels: [{ level: 1, effectText: "110% weapon damage, -15% enemy DEF for 2 turns.", multiplier: 1.10, defReduce: 0.15, duration: 2 },{ level: 2, effectText: "120% weapon damage, -20% enemy DEF for 2 turns.", multiplier: 1.20, defReduce: 0.20, duration: 2 },{ level: 3, effectText: "130% weapon damage, -25% enemy DEF for 3 turns.", multiplier: 1.30, defReduce: 0.25, duration: 3 }]},
+            "Adrenaline Surge": { name: "Adrenaline Surge", class: "Vanguard", tier: 2, type: "Passive", description: "Boosts damage and stamina regen at low HP.", prerequisites: { STR: 10, END: 7 }, levels: [ { level: 1, effectText: "Below 30% HP: +20% DMG, +10 Stamina/turn for 3 turns (once/encounter).", hpThreshold: 0.30, dmgBonus: 0.20, stamRegen: 10, duration: 3 },{ level: 2, effectText: "Below 33% HP: +25% DMG, +12 Stamina/turn for 3 turns.", hpThreshold: 0.33, dmgBonus: 0.25, stamRegen: 12, duration: 3 },{ level: 3, effectText: "Below 35% HP: +30% DMG, +15 Stamina/turn for 4 turns.", hpThreshold: 0.35, dmgBonus: 0.30, stamRegen: 15, duration: 4 }]},
+            "Overwhelm": { name: "Overwhelm", class: "Vanguard", tier: 3, type: "Active", resource: "Stamina", description: "Unleash a devastating series of rapid attacks.", prerequisites: { STR: 15, "Sundering Blow": 3, "Warriors Mettle": 2 }, cooldown: 2, levels: [{ level: 1, effectText: "3 attacks, each 75% weapon damage.", numAttacks: 3, multiplier: 0.75 },{ level: 2, effectText: "3 attacks, each 80% weapon damage.", numAttacks: 3, multiplier: 0.80 },{ level: 3, effectText: "3 attacks, each 85% weapon damage. Cooldown reduced by 1.", numAttacks: 3, multiplier: 0.85, cooldownReduction: 1 }]},
+            "Steadfast Guard": { name: "Steadfast Guard", class: "Guardian", tier: 1, type: "Active", resource: "Stamina", description: "Greatly increases block chance and mitigation for one turn.", prerequisites: { END: 2 }, levels: [{ level: 1, effectText: "+40% block chance, +25% block mitigation.", blockChanceBonus: 0.40, blockMitigationBonus: 0.25 },{ level: 2, effectText: "+45% block chance, +30% block mitigation.", blockChanceBonus: 0.45, blockMitigationBonus: 0.30 },{ level: 3, effectText: "+50% block chance, +35% block mitigation.", blockChanceBonus: 0.50, blockMitigationBonus: 0.35 }]},
+            "Shield Bash": { name: "Shield Bash", class: "Guardian", tier: 1, type: "Active", resource: "Stamina", description: "Attack with shield, chance to stun.", prerequisites: { END: 3, STR: 2 }, levels: [{ level: 1, effectText: "DMG (0.4STR+0.6END), 30% stun chance (1 turn).", strScale: 0.4, endScale: 0.6, stunChance: 0.30 },{ level: 2, effectText: "DMG (0.45STR+0.7END), 35% stun chance.", strScale: 0.45, endScale: 0.7, stunChance: 0.35 },{ level: 3, effectText: "DMG (0.5STR+0.8END), 40% stun chance.", strScale: 0.5, endScale: 0.8, stunChance: 0.40 }]},
+            "Reinforced Vitality": { name: "Reinforced Vitality", class: "Guardian", tier: 1, type: "Passive", description: "Increases base END.", prerequisites: { END: 4 }, levels: [ { level: 1, effectText: "+3 END.", endBonus: 3 }, { level: 2, effectText: "+5 END.", endBonus: 5 }, { level: 3, effectText: "+7 END.", endBonus: 7 }]},
+            "Concussive Slam": { name: "Concussive Slam", class: "Guardian", tier: 2, type: "Active", resource: "Stamina", description: "Powerful shield slam, chance to stun or daze.", prerequisites: { END: 8, "Shield Bash": 2 }, levels: [{ level: 1, effectText: "DMG (0.5STR+0.8END), 40% stun. Else Daze (-15% acc/spd) 2 turns.", strScale: 0.5, endScale: 0.8, stunChance: 0.40, dazeAccSpd: -0.15 },{ level: 2, effectText: "DMG (0.55STR+0.9END), 45% stun. Else Daze (-20% acc/spd).", strScale: 0.55, endScale: 0.9, stunChance: 0.45, dazeAccSpd: -0.20 },{ level: 3, effectText: "DMG (0.6STR+1.0END), 50% stun. Else Daze (-25% acc/spd).", strScale: 0.6, endScale: 1.0, stunChance: 0.50, dazeAccSpd: -0.25 }]},
+            "Second Wind": { name: "Second Wind", class: "Guardian", tier: 2, type: "Passive", description: "Instantly recover HP when health drops low (once/encounter).", prerequisites: { END: 10, "Reinforced Vitality": 2 }, levels: [{ level: 1, effectText: "Below 25% HP, recover 20% Max HP.", threshold: 0.25, healPercent: 0.20 },{ level: 2, effectText: "Below 28% HP, recover 25% Max HP.", threshold: 0.28, healPercent: 0.25 },{ level: 3, effectText: "Below 30% HP, recover 30% Max HP.", threshold: 0.30, healPercent: 0.30 }]},
+            "Immovable Object": { name: "Immovable Object", class: "Guardian", tier: 3, type: "Active", resource: "Stamina", description: "Massive damage reduction and stun immunity, but lowers own damage.", prerequisites: { END: 15, "Concussive Slam": 3, "Second Wind": 1 }, cooldown: 3, levels: [{ level: 1, effectText: "For 2 turns, gain 40% DR, stun immune. -25% own DMG.", duration: 2, dr: 0.40, selfDmgNerf: 0.25 },{ level: 2, effectText: "2 turns, 45% DR, stun/daze immune. -25% own DMG.", duration: 2, dr: 0.45, selfDmgNerf: 0.25 },{ level: 3, effectText: "3 turns, 50% DR, stun/daze immune. -25% own DMG. Cooldown reduced by 1.", duration: 3, dr: 0.50, selfDmgNerf: 0.25, cooldownReduction: 1 }]},
+            "Swift Strike": { name: "Swift Strike", class: "Striker", tier: 1, type: "Active", resource: "Stamina", description: "Quick attack with increased critical chance.", prerequisites: { AGI: 2 }, levels: [{ level: 1, effectText: "90% weapon damage, +15% crit chance.", multiplier: 0.90, critBonus: 0.15 },{ level: 2, effectText: "95% weapon damage, +18% crit chance.", multiplier: 0.95, critBonus: 0.18 },{ level: 3, effectText: "100% weapon damage, +20% crit chance.", multiplier: 1.00, critBonus: 0.20 }]},
+            "Evasive Step": { name: "Evasive Step", class: "Striker", tier: 1, type: "Active", resource: "Stamina", description: "Increases dodge, empowers next Swift Strike on success.", prerequisites: { AGI: 3 }, levels: [{ level: 1, effectText: "+30% dodge. If dodged, next Swift Strike +25% DMG.", dodgeBonus: 0.30, empowerDmg: 0.25 },{ level: 2, effectText: "+35% dodge. Empowered Swift Strike +30% DMG.", dodgeBonus: 0.35, empowerDmg: 0.30 },{ level: 3, effectText: "+40% dodge. Empowered Swift Strike +35% DMG.", dodgeBonus: 0.40, empowerDmg: 0.35 }]},
+            "Fleet Footed": { name: "Fleet Footed", class: "Striker", tier: 1, type: "Passive", description: "Increases base AGI.", prerequisites: { AGI: 4 }, levels: [ { level: 1, effectText: "+3 AGI.", agiBonus: 3 }, { level: 2, effectText: "+5 AGI.", agiBonus: 5 }, { level: 3, effectText: "+7 AGI.", agiBonus: 7 }]},
+            "Venomous Riposte": { name: "Venomous Riposte", class: "Striker", tier: 2, type: "Active", resource: "Stamina", description: "Attack applying poison, empowered after dodging.", prerequisites: { AGI: 8, "Swift Strike": 2 }, levels: [{ level: 1, effectText: "75% weapon DMG, Poison (5% AGI/turn for 3 turns). Empowered: 5 turns.", multiplier: 0.75, poisonAgiScale: 0.05, duration: 3, empDuration: 5 },{ level: 2, effectText: "80% weapon DMG, Poison (7% AGI/turn for 3 turns). Empowered: 5 turns.", multiplier: 0.80, poisonAgiScale: 0.07, duration: 3, empDuration: 5 },{ level: 3, effectText: "85% weapon DMG, Poison (10% AGI/turn for 3 turns). Empowered: 6 turns.", multiplier: 0.85, poisonAgiScale: 0.10, duration: 3, empDuration: 6 }]},
+            "Precision Expert": { name: "Precision Expert", class: "Striker", tier: 2, type: "Passive", description: "Increases critical hit chance and damage.", prerequisites: { AGI: 10, FOC: 5, "Fleet Footed": 2 }, levels: [{ level: 1, effectText: "+7% Crit Chance, +20% Crit Damage.", critChanceBonus: 0.07, critDmgBonus: 0.20 },{ level: 2, effectText: "+10% Crit Chance, +25% Crit Damage.", critChanceBonus: 0.10, critDmgBonus: 0.25 },{ level: 3, effectText: "+12% Crit Chance, +30% Crit Damage.", critChanceBonus: 0.12, critDmgBonus: 0.30 }]},
+            "Shadow Dance": { name: "Shadow Dance", class: "Striker", tier: 3, type: "Active", resource: "Stamina", description: "Greatly increases critical hit chance and restores Stamina on crits.", prerequisites: { AGI: 15, "Venomous Riposte": 3, "Precision Expert": 1 }, cooldown: 3, levels: [{ level: 1, effectText: "For 2 turns, +30% crit chance. Crits restore 10% skill Stamina cost or 5 flat Stamina.", duration: 2, critBonus: 0.30, stamRestorePercent: 0.10, stamRestoreFlat: 5 },{ level: 2, effectText: "2 turns, +35% crit chance. Crits restore 12% skill Stamina cost or 7 flat Stamina.", duration: 2, critBonus: 0.35, stamRestorePercent: 0.12, stamRestoreFlat: 7 },{ level: 3, effectText: "3 turns, +40% crit chance. Crits restore 15% skill Stamina cost or 10 flat Stamina. Cooldown reduced by 1.", duration: 3, critBonus: 0.40, stamRestorePercent: 0.15, stamRestoreFlat: 10, cooldownReduction: 1 }]},
+            "Energy Bolt": { name: "Energy Bolt", class: "Arcanist", tier: 1, type: "Active", resource: "Mana", description: "Deals direct energy damage scaling with FOC.", prerequisites: { FOC: 2 }, levels: [{ level: 1, effectText: "Deals (FOC * 1.5) energy damage.", focScale: 1.5 },{ level: 2, effectText: "Deals (FOC * 1.8) energy damage.", focScale: 1.8 },{ level: 3, effectText: "Deals (FOC * 2.2) energy damage.", focScale: 2.2 }]},
+            "Focus Ward": { name: "Focus Ward", class: "Arcanist", tier: 1, type: "Active", resource: "Mana", description: "Creates a temporary damage absorption shield.", prerequisites: { FOC: 3, END: 2 }, levels: [{ level: 1, effectText: "Absorbs (FOC * 3) damage. Lasts 3 turns.", focScale: 3, duration: 3 },{ level: 2, effectText: "Absorbs (FOC * 3.5) damage. Lasts 3 turns.", focScale: 3.5, duration: 3 },{ level: 3, effectText: "Absorbs (FOC * 4) damage. Lasts 4 turns.", focScale: 4, duration: 4 }]},
+            "Inner Sight": { name: "Inner Sight", class: "Arcanist", tier: 1, type: "Passive", description: "Increases base FOC and Mana regeneration.", prerequisites: { FOC: 4 }, levels: [ { level: 1, effectText: "+3 FOC, +1 Mana/turn.", focBonus: 3, manaRegen: 1 }, { level: 2, effectText: "+5 FOC, +2 Mana/turn.", focBonus: 5, manaRegen: 2 }, { level: 3, effectText: "+7 FOC, +3 Mana/turn.", focBonus: 7, manaRegen: 3 }]},
+            "Weakening Hex": { name: "Weakening Hex", class: "Arcanist", tier: 2, type: "Active", resource: "Mana", description: "Reduces enemy damage output and hit chance.", prerequisites: { FOC: 8, "Energy Bolt": 2 }, levels: [{ level: 1, effectText: "-20% enemy DMG, -10% enemy hit chance for 3 turns.", dmgReduc: 0.20, hitReduc: 0.10, duration: 3 },{ level: 2, effectText: "-25% enemy DMG, -12% enemy hit chance for 3 turns.", dmgReduc: 0.25, hitReduc: 0.12, duration: 3 },{ level: 3, effectText: "-30% enemy DMG, -15% enemy hit chance for 3 turns.", dmgReduc: 0.30, hitReduc: 0.15, duration: 3 }]},
+            "Arcane Potency": { name: "Arcane Potency", class: "Arcanist", tier: 2, type: "Passive", description: "Increases FOC skill effectiveness and reduces Mana cost.", prerequisites: { FOC: 10, "Inner Sight": 2 }, levels: [{ level: 1, effectText: "+10% FOC skill effectiveness, -5% Mana Cost.", effectivenessBonus: 0.10, manaCostReduction: 0.05 },{ level: 2, effectText: "+15% FOC skill effectiveness, -7% Mana Cost.", effectivenessBonus: 0.15, manaCostReduction: 0.07 },{ level: 3, effectText: "+20% FOC skill effectiveness, -10% Mana Cost.", effectivenessBonus: 0.20, manaCostReduction: 0.10 }]},
+            "Energy Cascade": { name: "Energy Cascade", class: "Arcanist", tier: 3, type: "Active", resource: "Mana", description: "Powerful energy blast, stronger against debuffed targets.", prerequisites: { FOC: 15, "Weakening Hex": 3, "Arcane Potency": 1 }, cooldown: 2, levels: [{ level: 1, effectText: "Deals (FOC * 3.5) energy damage. +25% DMG vs debuffed.", focScale: 3.5, debuffBonus: 0.25 },{ level: 2, effectText: "Deals (FOC * 4.0) energy damage. +30% DMG vs debuffed.", focScale: 4.0, debuffBonus: 0.30 },{ level: 3, effectText: "Deals (FOC * 4.5) energy damage. +35% DMG vs debuffed. Cooldown reduced by 1.", focScale: 4.5, debuffBonus: 0.35, cooldownReduction: 1 }]}
+        };
+
+        const EQUIPMENT_DATA = {
+            // Tier 0 (Starter)
+            "Wooden Stick":     { name: "Wooden Stick", type: "Weapon", tier: 0, str: 1, baseDmg: 4, gp: 0, description: "A sturdy piece of wood." },
+            "Tattered Loincloth":{ name: "Tattered Loincloth", type: "Chest", tier: 0, end: 1, gp: 0, description: "Barely decent." },
+            
+            // Tier 1 Items
+            "Rusty Dagger": { name: "Rusty Dagger", type: "Weapon", tier: 1, agi: 1, baseDmg: 8, gp: 25, description: "A rusty but sharp dagger." },
+            "Short Sword": { name: "Short Sword", type: "Weapon", tier: 1, str: 2, baseDmg: 10, gp: 35, description: "A basic, reliable short sword." },
+            "Leather Scraps": { name: "Leather Scraps", type: "Chest", tier: 1, end: 2, gp: 30, description: "Scraps of leather, crudely tied." },
+            "Padded Shirt": { name: "Padded Shirt", type: "Chest", tier: 1, end: 3, agi: 1, gp: 40, description: "A thick shirt offering minimal protection." },
+            "Wooden Buckler": { name: "Wooden Buckler", type: "Shield", tier: 1, end: 2, gp: 20, description: "A small wooden shield." },
+            "Leather Cap": { name: "Leather Cap", type: "Helmet", tier: 1, end: 1, gp: 15, description: "A simple leather cap." },
+            "Cloth Handwraps": { name: "Cloth Handwraps", type: "Gloves", tier: 1, agi: 1, gp: 10, description: "Basic cloth wrappings for the hands." },
+            "Worn Leather Boots": { name: "Worn Leather Boots", type: "Boots", tier: 1, agi: 1, end: 1, gp: 18, description: "Boots that have seen better days." },
+            "Simple Iron Pendant": { name: "Simple Iron Pendant", type: "Amulet", tier: 1, foc: 1, gp: 22, description: "A plain iron pendant on a cord." },
+
+            // Tier 2 Items
+            "Steel Mace": { name: "Steel Mace", type: "Weapon", tier: 2, str: 4, end: 1, baseDmg: 18, gp: 120, description: "A hefty steel mace, good for crushing blows." },
+            "Elm Shortbow": { name: "Elm Shortbow", type: "Weapon", tier: 2, agi: 3, foc: 1, baseDmg: 15, gp: 110, description: "A flexible shortbow made of elm wood." },
+            "Chainmail Vest": { name: "Chainmail Vest", type: "Chest", tier: 2, end: 5, str: 1, gp: 150, description: "A vest of interlocking steel rings." },
+            "Reinforced Kite Shield": { name: "Reinforced Kite Shield", type: "Shield", tier: 2, end: 4, str: 1, gp: 90, description: "A sturdy kite shield with metal reinforcements." },
+            "Steel Sallet": { name: "Steel Sallet", type: "Helmet", tier: 2, end: 3, str: 1, gp: 75, description: "A common steel helmet offering decent head protection." },
+            "Leather Gauntlets": { name: "Leather Gauntlets", type: "Gloves", tier: 2, str: 1, agi: 2, gp: 60, description: "Sturdy leather gauntlets." },
+            "Steel Greaves": { name: "Steel Greaves", type: "Boots", tier: 2, end: 2, str: 2, gp: 80, description: "Protective steel coverings for the lower legs." },
+            "Enchanted Silver Locket": { name: "Enchanted Silver Locket", type: "Amulet", tier: 2, foc: 3, gp: 100, description: "A silver locket humming with faint arcane energy." },
+        };
+
+        const MONSTER_DATA_EXPANDED = {
+            // Tier 0 (Floor 1-2)
+            "Giant Rat": { name: "Giant Rat", tier: 0, hp: 15, attack: 3, defense: 1, speed: 10, abilities: [], gpReward: 2, loot: ["Rat Tail"], ai: "Mindless" },
+            "Cave Bat": { name: "Cave Bat", tier: 0, hp: 10, attack: 2, defense: 0, speed: 15, abilities: [], gpReward: 1, loot: ["Bat Wing"], ai: "Mindless" },
+            // Tier 1 (Floor 2-4)
+            "Goblin Scout": { name: "Goblin Scout", tier: 1, hp: 20, attack: 5, defense: 2, speed: 12, abilities: [{name: "Quick Stab", type: "Attack", damageMultiplier: 0.8, chance: 0.3}], gpReward: 5, loot: ["Goblin Ear", "Rusty Dagger"], ai: "Brute" },
+            "Giant Spider": { name: "Giant Spider", tier: 1, hp: 25, attack: 4, defense: 3, speed: 8, abilities: [{name: "Poison Bite", type: "AttackDebuff", damageMultiplier: 0.7, status: "Poison", duration: 2, chance: 0.25}], gpReward: 6, loot: ["Spider Silk", "Spider Fang"], ai: "Brute" },
+            "Hobgoblin Thug": { name: "Hobgoblin Thug", tier: 1, hp: 35, attack: 7, defense: 4, speed: 7, abilities: [{name: "Heavy Blow", type: "Attack", damageMultiplier: 1.3, accuracyModifier: -0.1, chance: 0.3}], gpReward: 10, loot: ["Hobgoblin Badge", "Short Sword"], ai: "Brute" },
+            "Orc Grunt": { name: "Orc Grunt", tier: 1, hp: 40, attack: 8, defense: 5, speed: 6, abilities: [{name: "War Cry", type: "BuffSelf", stat: "attack", amount: 1, duration: 2, chance: 0.2, flavor: "The Orc Grunt lets out a deafening war cry!"}], gpReward: 12, loot: ["Orc Tusk", "Padded Shirt"], ai: "Brute" },
+            // Tier 2 (Floor 5-8)
+            "Orc Berserker": { name: "Orc Berserker", tier: 2, hp: 60, attack: 10, defense: 3, speed: 8, abilities: [{name: "Reckless Attack", type: "AttackDebuffSelf", damageMultiplier: 1.5, selfDebuff: {stat: "defense", amount: -2, duration:1}, chance: 0.4}, {name: "Enrage", type: "BuffSelfConditional", condition: {hpPercentBelow: 0.4}, stat: "attack", amount: 3, duration: 3, once: true, flavor: "The Orc Berserker flies into a rage!"}], gpReward: 25, loot: ["Berserker Axe Piece", "Chainmail Vest"], ai: "Tactical" },
+            "Skeletal Warrior": { name: "Skeletal Warrior", tier: 2, hp: 45, attack: 9, defense: 6, speed: 5, resistances: {piercing: 0.5}, vulnerabilities: {blunt: 1.5}, abilities: [], gpReward: 18, loot: ["Bone Shard", "Steel Sallet"], ai: "Standard" },
+            "Shadow Lurker": { name: "Shadow Lurker", tier: 2, hp: 30, attack: 10, defense: 2, speed: 18, evasion: 0.2, abilities: [{name: "Shadow Step", type: "BuffSelf", stat: "evasion", amount: 0.2, duration: 2, chance: 0.3}], gpReward: 20, loot: ["Shadowy Essence", "Leather Gauntlets"], ai: "Tactical" },
+            "Dire Wolf": { name: "Dire Wolf", tier: 2, hp: 50, attack: 11, defense: 4, speed: 14, abilities: [{name: "Howl (Pack Tactics)", type: "BuffAllyConditional", condition: {allyType: "Dire Wolf", count: 1}, stat: "attack", amount: 2, duration: 2, chance: 0.3, flavor: "The Dire Wolf howls, emboldening its pack!"}], gpReward: 22, loot: ["Dire Wolf Pelt", "Steel Greaves"], ai: "Tactical" },
+            "Goblin Shaman": { name: "Goblin Shaman", tier: 2, hp: 35, attack: 5, defense: 3, speed: 10, abilities: [{name: "Weak Bolt", type: "MagicAttack", baseDamage: 8, scalingStat: "FOC", scaleFactor: 0.5, chance: 0.5}, {name: "Minor Heal", type: "HealAlly", baseHeal: 10, target: "lowestHPAlly", chance: 0.3}], gpReward: 20, loot: ["Shamanic Totem", "Simple Iron Pendant"], ai: "Intelligent" },
+            // Tier 3 (Floor 9-10)
+            "Armored Sentry": { name: "Armored Sentry", tier: 3, hp: 70, attack: 12, defense: 10, speed: 4, abilities: [{name: "Shield Bash", type: "AttackDebuff", damageMultiplier: 0.8, status: "Stun", duration: 1, chance: 0.25}], gpReward: 35, loot: ["Sentry Armor Scrap", "Reinforced Kite Shield"], ai: "Standard" },
+            "Cultist Acolyte": { name: "Cultist Acolyte", tier: 3, hp: 50, attack: 7, defense: 5, speed: 9, abilities: [{name: "Dark Bolt", type: "MagicAttack", baseDamage: 12, scalingStat: "FOC", scaleFactor: 0.8, chance: 0.6}, {name: "Curse of Weakness", type: "DebuffPlayer", stat: "attack", amount: -3, duration: 3, chance: 0.3}], gpReward: 30, loot: ["Unholy Symbol", "Enchanted Silver Locket"], ai: "Intelligent" },
+            "Minotaur Novice": { name: "Minotaur Novice", tier: 3, hp: 80, attack: 15, defense: 7, speed: 6, abilities: [{name: "Charge", type: "Attack", damageMultiplier: 1.5, firstTurnOnly: true, chance: 0.8, flavor: "The Minotaur Novice charges!"}, {name: "Powerful Swing", type: "Attack", damageMultiplier: 1.2, chance: 0.5}], gpReward: 50, loot: ["Minotaur Horn Fragment", "Steel Mace"], ai: "Brute" },
+            "Cave Troll": { name: "Cave Troll", tier: 3, hp: 100, attack: 14, defense: 6, speed: 5, abilities: [{name: "Regeneration", type: "HealSelf", baseHeal: 5, perTurn: true}, {name: "Fearsome Roar", type: "DebuffPlayer", stat: "defense", amount: -2, duration: 2, chance: 0.2}], gpReward: 60, loot: ["Troll Hide", "Elm Shortbow"], ai: "Brute" },
+            "Ogre Chieftain": { name: "Ogre Chieftain", tier: 3, hp: 120, attack: 16, defense: 8, speed: 7, abilities: [{name: "Mighty Cleave", type: "Attack", damageMultiplier: 1.3, hitsAll: false, chance: 0.4}, {name: "Roar of Command", type: "DebuffPlayer", stat: "all", amount: -1, duration: 2, chance: 0.3, flavor: "The Ogre Chieftain's roar shakes the room!"}, {name: "Thick Hide", type: "Passive", damageReductionFlat: 2}], gpReward: 100, loot: ["Chieftain's Club", "Ogre Eye"], ai: "TacticalBoss" }
+        };
+        
+        const TOWER_FLOORS_DATA = [
+            { floor: 1, name: "Dusty Storeroom", description: "Old crates and cobwebs fill this forgotten storeroom.", encounters: [ { monsters: ["Giant Rat", "Giant Rat"] }, { monsters: ["Cave Bat"] } ], environmentEffect: null, trap: null, rewards: {gp: 10} },
+            { floor: 2, name: "Crumbling Passage", description: "The passage ahead is unstable.", encounters: [ { monsters: ["Goblin Scout"] }, { monsters: ["Giant Rat", "Cave Bat", "Giant Rat"] } ], environmentEffect: null, trap: {type: "choice", text: "Loose stones litter the path. [A]ttempt to navigate carefully (AGI check), or [P]roceed normally?", success: { text: "You navigate the stones deftly.", effect: null }, failure: { text: "You stumble, losing 5 HP.", effect: {type: "damage", amount: 5} } }, rewards: {gp: 15, items: ["Cloth Handwraps"]} },
+            { floor: 3, name: "Damp Cave", description: "The air is heavy with moisture, making exertion more taxing.", encounters: [ { monsters: ["Giant Spider"] }, { monsters: ["Hobgoblin Thug"] } ], environmentEffect: { type: "stat_modifier", target: "player", stat: "staminaCost", amount: 1, message: "The damp air increases stamina costs by 1 this floor." }, trap: null, rewards: {gp: 20} },
+            { floor: 4, name: "Narrow Ledge", description: "You must traverse a precarious narrow ledge.", encounters: [ { monsters: ["Cave Bat", "Cave Bat", "Goblin Scout"] }, { monsters: ["Orc Grunt"] } ], environmentEffect: null, trap: {type: "check_on_enter", stat: "AGI", dc: 12, success: {text: "You cross the ledge with ease."}, failure: {text: "You nearly slip! Start your next combat slightly off-balance.", effect: {type: "debuff_next_combat", stat: "AGI", amount: -0.1, duration: 2, message: "You start the fight off-balance (-10% AGI for 2 turns)!"} } }, rewards: {gp: 25, items: ["Leather Cap"]} },
+            { floor: 5, name: "Chieftain's Den", description: "Crude Orcish totems line the walls of this den, an Orc Berserker stands guard.", encounters: [ { monsters: ["Orc Berserker"] } ], environmentEffect: { type: "monster_buff", monsterType: "Orc", stat: "attack", amount: 0.05, message: "Orcs in this den seem emboldened (+5% damage)." }, trap: null, rewards: {gp: 50, items: ["Short Sword"]} },
+            { floor: 6, name: "Ancient Crypt", description: "A chilling aura permeates this crypt. The air itself seems to drain your vitality.", encounters: [ { monsters: ["Skeletal Warrior", "Skeletal Warrior"] }, { monsters: ["Shadow Lurker"] } ], environmentEffect: { type: "damage_per_turn", target: "all_living", amount: 1, message: "The crypt's chilling aura drains 1 HP from all living beings each turn." }, trap: null, rewards: {gp: 30} },
+            { floor: 7, name: "Wolf Den", description: "The scent of wild beasts is strong. The wolves here are fiercely territorial.", encounters: [ { monsters: ["Dire Wolf"] }, { monsters: ["Dire Wolf", "Goblin Shaman"] } ], environmentEffect: { type: "monster_buff", monsterType: "Dire Wolf", stat: "AGI", amount: 0.1, message: "Wolves in this den are quicker (+10% AGI)." }, trap: {type: "choice", text: "A half-eaten carcass lies nearby. [I]nvestigate it, or [L]eave it be?", success: {text: "You find a discarded Potion of Minor Healing!", effect: {type: "gain_item", item: "Minor Health Potion"} }, failure: {text: "It was a trap! A hidden snare springs, dealing 10 damage.", effect: {type: "damage", amount: 10} } }, rewards: {gp: 35, items: ["Wooden Buckler"]} },
+            { floor: 8, name: "Guard Barracks", description: "This chamber appears to be an old guard barracks. Weapon racks line the walls.", encounters: [ { monsters: ["Armored Sentry"] }, { monsters: ["Cultist Acolyte", "Skeletal Warrior"] } ], environmentEffect: null, trap: null, rewards: {gp: 40} },
+            { floor: 9, name: "Labyrinthine Tunnels", description: "The tunnels twist and turn, the stale air is disorienting.", encounters: [ { monsters: ["Minotaur Novice"] }, { monsters: ["Cave Troll"] } ], environmentEffect: { type: "chance_debuff_player", status: "Dazed", chance: 0.15, duration: 1, message: "The confusing tunnels might daze you at the start of combat (-10% accuracy for 1 turn)." }, trap: null, rewards: {gp: 60, items: ["Steel Mace"]} },
+            { floor: 10, name: "Throne Room Antechamber", description: "Imposing, weathered statues glare down from alcoves. The air is heavy with anticipation.", encounters: [ { monsters: ["Ogre Chieftain"] } ], environmentEffect: { type: "stat_modifier", target: "player", stat: "FOC", amount: -0.05, message: "The imposing statues are unnerving (-5% FOC this floor)." }, trap: null, rewards: {gp: 150, items: ["Enchanted Silver Locket"]} }
+        ];
+
+
+        let player;
+        let gameState = 'mainMenu'; 
+        let combatState = {}; 
+        let characterScreenTab = 'Stats'; 
+        let inventoryFilter = 'All'; 
+        let shopFilter = 'All';
+        let dailyGpEarnedFromExercise = 0; 
+        
+        const initialPlayerState = {
+            playerName: "Recruit", 
+            stats: { STR: 0, END: 0, AGI: 0, FOC: 0 },
+            gp: 50, 
+            skills: {}, 
+            equipment: { 
+                weapon: null, 
+                chest: null,
+                shield: null, 
+                helmet: null, 
+                gloves: null, 
+                boots: null, 
+                amulet: null 
+            },
+            inventory: [], 
+            potions: {}, 
+            derivedStats: { maxHp: 0, currentHp: 0, maxStamina: 0, currentStamina: 0, maxMana: 0, currentMana: 0 },
+            tower: { highestFloorCleared: 0, currentFloor: 0, currentEncounterIndex: 0, floorMonsterInstances: [] }, 
+            onboarding: { statsUnlockedCount: 0, canLevelStatsWithGP: false, workoutsLogged: 0, lastExerciseDate: null, dailyGpEarnedToday: 0, nameSet: false, tutorialStep: 0 },
+            respec: { isFirstRespecFree: true, lastRespecTimestamp: 0 },
+            inventoryFilter: 'All' 
+        };
+
+        const gameHeader = document.getElementById('gameHeader');
+        const gameLogContainer = document.getElementById('gameLogContainer');
+        const statsDisplay = document.getElementById('statsDisplay');
+        const mainContent = document.getElementById('mainContent');
+        const controls = document.getElementById('controls');
+
+        function addLog(message, type = 'info') {
+            console.log(`LOG (${type}): ${message}`); 
+            const p = document.createElement('p');
+            if (type === 'combat' && message.startsWith("You attack")) message = "⚔️ " + message;
+            else if (type === 'player-skill') message = "✨ " + message;
+            else if (type === 'success' && message.includes("damage")) message = "💥 " + message;
+            else if (type === 'error' && message.includes("damage")) message = "💔 " + message;
+            else if (type === 'victory' && message.includes("defeated!")) message = "☠️ " + message;
+            else if (message.includes("restore") && (message.includes("HP") || message.includes("Stamina") || message.includes("Mana"))) message = "❤️‍🩹 " + message;
+
+            p.textContent = message;
+            p.className = type;
+            gameLogContainer.insertBefore(p, gameLogContainer.firstChild); 
+            while (gameLogContainer.children.length > 100) { 
+                gameLogContainer.removeChild(gameLogContainer.lastChild);
+            }
+        }
+
+        function d10() { return Math.floor(Math.random() * 10) + 1; }
+        
+        function calculateDerivedStats() {
+            if (!player) return; 
+            player.derivedStats.maxHp = BASE_HP + (getPlayerTotalStat('END') * 12) + (getPlayerTotalStat('STR') * 4);
+            player.derivedStats.maxStamina = BASE_STAMINA + (getPlayerTotalStat('END') * 5) + (getPlayerTotalStat('AGI') * 7);
+            player.derivedStats.maxMana = BASE_MANA + (getPlayerTotalStat('FOC') * 8) + (getPlayerTotalStat('END') * 3);
+            
+            player.derivedStats.currentHp = Math.min(player.derivedStats.currentHp, player.derivedStats.maxHp);
+            player.derivedStats.currentStamina = Math.min(player.derivedStats.currentStamina, player.derivedStats.maxStamina);
+            player.derivedStats.currentMana = Math.min(player.derivedStats.currentMana, player.derivedStats.maxMana);
+        }
+
+        function equipItem(itemName) {
+            console.log("[EQUIP START] Attempting to equip:", itemName);
+            const itemToEquip = EQUIPMENT_DATA[itemName];
+
+            if (!itemToEquip) {
+                addLog(`Error: Item data for '${itemName}' not found. Cannot equip.`, 'error');
+                console.error("[EQUIP FAIL] Item data not found for:", itemName);
+                return;
+            }
+
+            const targetSlot = itemToEquip.type.toLowerCase(); 
+            console.log(`[EQUIP] Target Slot: ${targetSlot}, Item: ${itemName}, Item Type: ${itemToEquip.type}`);
+
+            if (!player.equipment.hasOwnProperty(targetSlot)) {
+                addLog(`Error: Invalid equipment slot '${targetSlot}'. Ensure it's defined in initialPlayerState.equipment.`, 'error');
+                console.error("[EQUIP FAIL] Invalid slot:", targetSlot, "Player equipment keys:", Object.keys(player.equipment));
+                return;
+            }
+
+            const currentItemInSlot = player.equipment[targetSlot];
+            console.log(`[EQUIP] Current item in ${targetSlot}: ${currentItemInSlot || 'None'}`);
+
+            if (currentItemInSlot && currentItemInSlot !== itemName) {
+                if (!player.inventory.includes(currentItemInSlot)) {
+                    player.inventory.push(currentItemInSlot);
+                }
+                addLog(`Unequipped ${currentItemInSlot} from ${targetSlot}.`, 'info');
+                console.log(`[EQUIP] Moved ${currentItemInSlot} to inventory. Inventory:`, JSON.stringify(player.inventory));
+            }
+            
+            player.equipment[targetSlot] = itemName;
+            console.log(`[EQUIP] Set ${targetSlot} to ${itemName}. Equipment:`, JSON.stringify(player.equipment));
+
+            const invIndex = player.inventory.indexOf(itemName);
+            if (invIndex > -1) {
+                player.inventory.splice(invIndex, 1);
+                console.log(`[EQUIP] Removed ${itemName} from inventory. Inventory:`, JSON.stringify(player.inventory));
+            } else {
+                console.log(`[EQUIP INFO] ${itemName} was not in inventory (normal for starter gear or if bought and equipped directly).`);
+            }
+            
+            addLog(`Equipped ${itemName} to ${targetSlot}.`, 'success');
+            
+            calculateDerivedStats(); 
+            updateDisplay();
+            if (gameState === 'viewingCharacter') {
+                renderCharacterScreenContent(); 
+            }
+            console.log("[EQUIP END] Successfully equipped:", itemName);
+        }
+
+
+        function unequipItem(slot) {
+            console.log("[UNEQUIP START] Slot:", slot);
+            const itemName = player.equipment[slot];
+            if (itemName) {
+                if (!player.inventory.includes(itemName)) { 
+                    player.inventory.push(itemName);
+                    console.log(`[UNEQUIP] Added ${itemName} to inventory. Inventory:`, JSON.stringify(player.inventory));
+                }
+                player.equipment[slot] = null;
+                addLog(`Unequipped ${itemName} from ${slot}.`, 'info');
+                console.log(`[UNEQUIP] Slot ${slot} cleared. Equipment:`, JSON.stringify(player.equipment));
+                calculateDerivedStats();
+                updateDisplay();
+                if (gameState === 'viewingCharacter') renderCharacterScreenContent(); 
+            } else {
+                addLog(`No item equipped in ${slot} slot.`, 'warning');
+                console.log(`[UNEQUIP] No item in slot ${slot}.`);
+            }
+        }
+        
+        function getPlayerStatBonusFromEquipment(statName) {
+            let bonus = 0;
+            for (const slot in player.equipment) {
+                const itemName = player.equipment[slot];
+                if (itemName && EQUIPMENT_DATA[itemName]) {
+                    const itemData = EQUIPMENT_DATA[itemName];
+                    if (itemData[statName.toLowerCase()] !== undefined) { 
+                        bonus += itemData[statName.toLowerCase()];
+                    }
+                }
+            }
+            return bonus;
+        }
+
+        function getPlayerTotalStat(statName) { 
+            if (!player || !player.stats) return 0; 
+            let baseStat = player.stats[statName] || 0;
+            let equipBonus = getPlayerStatBonusFromEquipment(statName);
+            let skillBonus = 0; 
+            
+            if (statName === 'STR' && player.skills["Warriors Mettle"] && SKILL_DATA["Warriors Mettle"]) {
+                const skillLevel = player.skills["Warriors Mettle"];
+                if (skillLevel > 0) skillBonus += SKILL_DATA["Warriors Mettle"].levels[skillLevel -1].strBonus;
+            }
+             if (statName === 'END' && player.skills["Reinforced Vitality"] && SKILL_DATA["Reinforced Vitality"]) {
+                const skillLevel = player.skills["Reinforced Vitality"];
+                if (skillLevel > 0) skillBonus += SKILL_DATA["Reinforced Vitality"].levels[skillLevel -1].endBonus;
+            }
+            if (statName === 'AGI' && player.skills["Fleet Footed"] && SKILL_DATA["Fleet Footed"]) {
+                const skillLevel = player.skills["Fleet Footed"];
+                if (skillLevel > 0) skillBonus += SKILL_DATA["Fleet Footed"].levels[skillLevel -1].agiBonus;
+            }
+            if (statName === 'FOC' && player.skills["Inner Sight"] && SKILL_DATA["Inner Sight"]) {
+                const skillLevel = player.skills["Inner Sight"];
+                if (skillLevel > 0) skillBonus += SKILL_DATA["Inner Sight"].levels[skillLevel -1].focBonus;
+            }
+            
+            if (combatState && combatState.playerStatusEffects) { 
+                const surgeEffect = combatState.playerStatusEffects.find(eff => eff.name === "Adrenaline Surge Buff");
+                if (surgeEffect && statName === 'STR') { 
+                    // skillBonus += surgeEffect.strBonus; 
+                }
+            }
+
+            return baseStat + equipBonus + skillBonus;
+        }
+
+        function getItemStatString(item) {
+            let stats = [];
+            if(!item) return "Unknown Item";
+            if(item.str !== undefined) stats.push(`STR: ${item.str}`);
+            if(item.end !== undefined) stats.push(`END: ${item.end}`);
+            if(item.agi !== undefined) stats.push(`AGI: ${item.agi}`);
+            if(item.foc !== undefined) stats.push(`FOC: ${item.foc}`);
+            if(item.baseDmg !== undefined) stats.push(`Dmg: ${item.baseDmg}`);
+            if(item.effect && item.effect.restore) stats.push(`Restores ${item.effect.amount} ${item.effect.restore}`);
+            return stats.length > 0 ? stats.join(', ') : 'No direct stat bonuses';
+        }
+
+        function updateStatsDisplay() {
+            if (!player || !player.derivedStats) return; 
+            calculateDerivedStats(); 
+            statsDisplay.innerHTML = `
+                <div>HP: ${player.derivedStats.currentHp} / ${player.derivedStats.maxHp}</div>
+                <div>Stamina: ${player.derivedStats.currentStamina} / ${player.derivedStats.maxStamina}</div>
+                <div>Mana: ${player.derivedStats.currentMana} / ${player.derivedStats.maxMana}</div>
+                <div>STR: ${getPlayerTotalStat('STR')} (${player.stats.STR})</div>
+                <div>END: ${getPlayerTotalStat('END')} (${player.stats.END})</div>
+                <div>AGI: ${getPlayerTotalStat('AGI')} (${player.stats.AGI})</div>
+                <div>FOC: ${getPlayerTotalStat('FOC')} (${player.stats.FOC})</div>
+                <div>GP: ${player.gp}</div>
+            `;
+        }
+
+        function renderMainMenu() {
+            if (!player) { initializeNewGame(); } 
+
+            if (!player.onboarding.nameSet) { 
+                 mainContent.innerHTML = `<h2>Welcome, Trainee!</h2>
+                    <p>Please enter your name to begin your journey in <strong>Fit Forge</strong>:</p>
+                    <input type="text" id="playerNameInput" placeholder="Character Name" maxlength="20">
+                 `;
+                 controls.innerHTML = `<button onclick="setPlayerName()">Forge My Hero</button>`;
+                 document.getElementById('playerNameInput')?.focus(); 
+                 return; 
+            }
+
+            mainContent.innerHTML = `<h2>Main Menu - ${player.playerName}</h2>`;
+            if (player.onboarding.tutorialStep === 0) { 
+                mainContent.innerHTML += `<div class="intro-text">
+                    <p>The air in the old training hall is thick with dust and the scent of forgotten effort. Echoes of past warriors linger. You stand at a precipice, a new trainee, but with a potential few understand...</p>
+                    <p>An old Master approaches. "Welcome, ${player.playerName}. Many come to this tower seeking power, but few grasp its true source. It is not merely will, nor just skill with a blade. True strength is forged in the crucible of exertion, in the very pulse of your own vitality."</p>
+                    <p>"Your training begins not with a sword, but with a single step. Prove your commitment. Channel your physical efforts from your world, and let us see what potential awakens within you. Please, <strong>Log Your First Exercise</strong>."</p>
+                </div>`;
+            } else if (player.onboarding.tutorialStep === 1 && player.onboarding.statsUnlockedCount < 4) { 
+                mainContent.innerHTML += `<p class="info">Log your first exercise to awaken all your core attributes!</p>`;
+            } else if (player.onboarding.tutorialStep === 2 ) { 
+                 mainContent.innerHTML += `<p class="info">Tutorial: Visit 'Character' screen. Try learning 'Power Strike' under the 'Skills' tab. Then, go to the main menu to test your might in the 'Tower Climb'!</p>`;
+            }
+            else {
+                 mainContent.innerHTML += `<p>What would you like to do, ${player.playerName}?</p>`;
+            }
+
+            controls.innerHTML = `
+                <div class="button-grid">
+                    <button onclick="changeState('loggingExercise')">Log Exercise</button>
+                    <button onclick="changeState('viewingCharacter')">Character</button> 
+                    <button onclick="changeState('inShop')">Shop</button>
+                    <button onclick="changeState('inTowerMenu')">Tower Climb</button>
+                    <button class="debug-button" onclick="grantGp(1000)">Grant 1000 GP</button>
+                    <button onclick="manualSaveGame()">Save Game</button> 
+                </div>
+            `;
+        }
+        
+        function setPlayerName() {
+            const nameInput = document.getElementById('playerNameInput');
+            if (nameInput && nameInput.value.trim() !== "") {
+                player.playerName = nameInput.value.trim();
+                player.onboarding.nameSet = true;
+                gameHeader.textContent = `Fit Forge - ${player.playerName}`;
+                addLog(`Welcome, ${player.playerName}! Your journey begins now.`, "success");
+                player.onboarding.tutorialStep = 0; 
+                saveGame();
+                changeState('mainMenu'); 
+            } else {
+                addLog("Please enter a name for your character.", "warning");
+            }
+        }
+
+
+        function renderExerciseLogScreen() { 
+            mainContent.innerHTML = `
+                <h2>Log Your Exercise</h2>
+                <p class="cap-explanation">This game encourages safe and consistent exercise. 
+                    GP earned from workouts is capped daily (${DAILY_GP_CAP_FROM_EXERCISE} GP) to promote rest and recovery. 
+                    This aligns with general health guidelines (e.g., ~150 mins moderate or 75 mins vigorous activity weekly).
+                    Use the RPE (Rate of Perceived Exertion) scale if unsure:
+                    <ul>
+                        <li>Moderate (RPE 3-4/10): Breathing harder, can talk but not sing.</li>
+                        <li>Vigorous (RPE 5-7/10): Breathing deep/rapid, only a few words at a time.</li>
+                    </ul>
+                     <button onclick="window.open('https://www.cdc.gov/physicalactivity/basics/measuring/index.html', '_blank')" style="font-size:0.8em; padding:3px 6px;">Read More (CDC)</button>
+                </p>
+                <p>Today's GP from exercise: ${dailyGpEarnedFromExercise} / ${DAILY_GP_CAP_FROM_EXERCISE}</p>
+                <div>
+                    <label for="lightMinutes">Light Minutes:</label>
+                    <button class="exercise-input-group" onclick="adjustExerciseTime('lightMinutes', -15)">-15</button>
+                    <input type="number" id="lightMinutes" value="0" min="0" step="1">
+                    <button class="exercise-input-group" onclick="adjustExerciseTime('lightMinutes', 15)">+15</button>
+                </div>
+                <div>
+                    <label for="moderateMinutes">Moderate Minutes:</label>
+                     <button class="exercise-input-group" onclick="adjustExerciseTime('moderateMinutes', -15)">-15</button>
+                    <input type="number" id="moderateMinutes" value="0" min="0" step="1">
+                    <button class="exercise-input-group" onclick="adjustExerciseTime('moderateMinutes', 15)">+15</button>
+                </div>
+                <div>
+                    <label for="vigorousMinutes">Vigorous Minutes:</label>
+                    <button class="exercise-input-group" onclick="adjustExerciseTime('vigorousMinutes', -15)">-15</button>
+                    <input type="number" id="vigorousMinutes" value="0" min="0" step="1">
+                    <button class="exercise-input-group" onclick="adjustExerciseTime('vigorousMinutes', 15)">+15</button>
+                </div>
+            `;
+            controls.innerHTML = `
+                <button onclick="submitExercise()">Submit Exercise</button>
+                <button onclick="changeState('mainMenu')">Back to Menu</button>
+            `;
+        }
+
+        function adjustExerciseTime(inputId, amount) {
+            const inputElement = document.getElementById(inputId);
+            if (!inputElement) return;
+            let currentValue = parseInt(inputElement.value) || 0;
+            currentValue += amount;
+            if (currentValue < 0) currentValue = 0;
+            inputElement.value = currentValue;
+        }
+        
+        function renderCharacterScreen() {
+            mainContent.innerHTML = `<h2>Character - ${player.playerName}</h2>`; 
+            controls.innerHTML = `
+                <div class="button-grid tab-buttons">
+                    <button class="${characterScreenTab === 'Stats' ? 'active' : ''}" onclick="setCharacterScreenTab('Stats')">Stats</button>
+                    <button class="${characterScreenTab === 'Skills' ? 'active' : ''}" onclick="setCharacterScreenTab('Skills')">Skills</button>
+                    <button class="${characterScreenTab === 'Equipment' ? 'active' : ''}" onclick="setCharacterScreenTab('Equipment')">Equipment</button>
+                </div>
+                <button onclick="changeState('mainMenu')">Back to Main Menu</button>
+                ${player.onboarding.canLevelStatsWithGP ? `<button onclick="handleRespec()">Respec Stats/Skills</button>` : ''}
+            `;
+            renderCharacterScreenContent(); 
+        }
+
+        function setCharacterScreenTab(tabName) {
+            characterScreenTab = tabName;
+            if (tabName === 'Equipment') { 
+                inventoryFilter = player.inventoryFilter || 'All'; 
+            }
+            renderCharacterScreenContent(); 
+            const tabButtons = document.querySelectorAll('.controls .tab-buttons button'); 
+            tabButtons.forEach(btn => {
+                if (btn.textContent.toLowerCase().startsWith(tabName.toLowerCase().split(' ')[0])) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+        
+        function setCharacterEquipmentInventoryFilter(filter) {
+            inventoryFilter = filter;
+            player.inventoryFilter = filter; 
+            renderCharacterScreenContent(); 
+        }
+
+
+        function renderCharacterScreenContent() {
+            let html = ''; 
+            let existingH2 = mainContent.querySelector('h2');
+            mainContent.innerHTML = existingH2 ? existingH2.outerHTML : `<h2>Character - ${player.playerName}</h2>`;
+
+
+            if (characterScreenTab === 'Stats') {
+                html += `<h3>Core Stats</h3>`;
+                ['STR', 'END', 'AGI', 'FOC'].forEach(stat => {
+                    const cost = calculateStatUpgradeCost(stat);
+                    const canAfford = player.gp >= cost;
+                    const isMaxLevel = cost === Infinity;
+                    html += `<div class="stat-item">
+                        ${stat}: ${player.stats[stat]} (Total: ${getPlayerTotalStat(stat)})
+                        ${player.onboarding.canLevelStatsWithGP ? 
+                            `<button onclick="upgradeStat('${stat}')" ${(!canAfford && !isMaxLevel) ? 'disabled title="Not enough GP!"' : (isMaxLevel ? 'disabled title="Max Level!"' : '')}>Upgrade (+${isMaxLevel ? 'MAX' : cost} GP)</button>` : 
+                            '(Unlock via workouts)'}
+                    </div>`;
+                });
+            } else if (characterScreenTab === 'Skills') {
+                html += `<h3>Skills</h3>`;
+                const skillsByClass = {};
+                Object.values(SKILL_DATA).forEach(skill => {
+                    if (!skillsByClass[skill.class]) skillsByClass[skill.class] = [];
+                    skillsByClass[skill.class].push(skill);
+                });
+
+                for (const className in skillsByClass) {
+                    html += `<h4>${className}</h4>`;
+                    skillsByClass[className].sort((a,b) => a.tier - b.tier || a.name.localeCompare(b.name)).forEach(skill => { 
+                        const currentLevel = player.skills[skill.name] || 0;
+                        let prereqText = "";
+                        let canLearn = true; 
+                        if (skill.prerequisites) {
+                            prereqText = "Req: ";
+                            let reqs = [];
+                            for (const pKey in skill.prerequisites) {
+                                const reqValue = skill.prerequisites[pKey];
+                                let isMet;
+                                if (SKILL_DATA[pKey]) { 
+                                    isMet = (player.skills[pKey] || 0) >= reqValue;
+                                    reqs.push(`${pKey} Lvl ${reqValue} (${isMet ? '<span class="success">Met</span>' : '<span class="error">Not Met</span>'})`);
+                                } else { 
+                                    isMet = getPlayerTotalStat(pKey.toUpperCase()) >= reqValue;
+                                    reqs.push(`${pKey.toUpperCase()} ${reqValue} (${isMet ? '<span class="success">Met</span>' : '<span class="error">Not Met</span>'})`);
+                                }
+                                if (!isMet && currentLevel === 0) canLearn = false; 
+                            }
+                            prereqText += reqs.join(', ');
+                        }
+                        const escapedSkillName = JSON.stringify(skill.name);
+                        html += `<div class="skill-item">
+                            <strong>${skill.name}</strong> (Tier ${skill.tier}, ${skill.type}) - Level: ${currentLevel} / ${skill.levels.length}<br>
+                            <em>${skill.description}</em><br>
+                            ${prereqText ? `<span class="skill-prereqs">${prereqText}</span><br>` : ''}
+                            Current Effect: ${currentLevel > 0 ? skill.levels[currentLevel-1].effectText : "Not learned."}<br>`;
+                        if (currentLevel < skill.levels.length) {
+                            const costKey = currentLevel === 0 ? 'unlock' : 'level' + (currentLevel + 1); 
+                            const cost = SKILL_COSTS_TIERED[skill.tier][costKey];
+                            const canAfford = player.gp >= cost;
+                            html += `<button onclick='learnOrLevelSkill(${escapedSkillName})' ${(!canAfford || (currentLevel === 0 && !canLearn)) ? 'disabled' : ''} 
+                                     title="${!canAfford ? 'Not enough GP!' : (!canLearn && currentLevel===0 ? 'Prerequisites not met!' : '')}">
+                                     ${currentLevel === 0 ? 'Learn' : 'Level Up'} (+${cost} GP)
+                                   </button>`;
+                        }
+                        html += `</div>`;
+                    });
+                }
+            } else if (characterScreenTab === 'Equipment') { 
+                 html += `<h3>Equipped Items</h3>`;
+                const allSlots = ["weapon", "chest", "shield", "helmet", "gloves", "boots", "amulet"]; 
+                allSlots.forEach(slot => {
+                    if (player.equipment.hasOwnProperty(slot)) { 
+                        const itemName = player.equipment[slot];
+                        const itemData = itemName ? EQUIPMENT_DATA[itemName] : null;
+                        let slotDisplayName = slot.charAt(0).toUpperCase() + slot.slice(1);
+                        html += `<div class="item-details"><strong>${slotDisplayName}:</strong> ${itemName || 'None'}
+                                 ${itemData ? `<span class="item-stats">(${getItemStatString(itemData)})</span>` : ''}
+                                 ${itemName && itemName !== "Fists" && itemName !== "Tattered Loincloth" ? `<button onclick="unequipItem('${slot}')">Unequip</button>` : ''} 
+                               </div>`;
+                    }
+                });
+
+                html += `<h3>Inventory</h3>`;
+                html += `<div class="filters-container">
+                            <button class="${inventoryFilter === 'All' ? 'active' : ''}" onclick="setCharacterEquipmentInventoryFilter('All')">All</button>
+                            <button class="${inventoryFilter === 'Weapon' ? 'active' : ''}" onclick="setCharacterEquipmentInventoryFilter('Weapon')">Weapons</button>
+                            <button class="${inventoryFilter === 'Shield' ? 'active' : ''}" onclick="setCharacterEquipmentInventoryFilter('Shield')">Shields</button>
+                            <button class="${inventoryFilter === 'Helmet' ? 'active' : ''}" onclick="setCharacterEquipmentInventoryFilter('Helmet')">Helmets</button>
+                            <button class="${inventoryFilter === 'Chest' ? 'active' : ''}" onclick="setCharacterEquipmentInventoryFilter('Chest')">Armor (Chest)</button>
+                            <button class="${inventoryFilter === 'Gloves' ? 'active' : ''}" onclick="setCharacterEquipmentInventoryFilter('Gloves')">Gloves</button>
+                            <button class="${inventoryFilter === 'Boots' ? 'active' : ''}" onclick="setCharacterEquipmentInventoryFilter('Boots')">Boots</button>
+                            <button class="${inventoryFilter === 'Amulet' ? 'active' : ''}" onclick="setCharacterEquipmentInventoryFilter('Amulet')">Amulets</button>
+                         </div>`;
+
+                const filteredInventory = player.inventory.filter(itemName => {
+                    if (inventoryFilter === 'All') return true;
+                    const itemData = EQUIPMENT_DATA[itemName];
+                    return itemData && itemData.type === inventoryFilter;
+                });
+
+                if (filteredInventory.length === 0) {
+                    html += `<p>Your inventory is empty ${inventoryFilter !== 'All' ? 'for this filter' : ''}.</p>`;
+                } else {
+                    filteredInventory.forEach(itemName => {
+                        const itemData = EQUIPMENT_DATA[itemName];
+                        if (itemData) {
+                            const escapedItemName = JSON.stringify(itemName);
+                            html += `<div class="item-details inventory-item">
+                                <strong>${itemData.name}</strong> (${itemData.type}) <span class="item-stats">(${getItemStatString(itemData)})</span><br>
+                                <em>${itemData.description || ''}</em>
+                                <button onclick='equipItemFromInventoryWrapper(${escapedItemName})'>Equip</button>
+                                <button class='sell-button' onclick='sellItem(${escapedItemName})'>Sell (${Math.floor((itemData.gp || 0) / 2)} GP)</button>
+                            </div>`;
+                        }
+                    });
+                }
+            }
+            
+            mainContent.innerHTML += html;
+        }
+        
+        function setInventoryFilterTab(filter) { 
+            inventoryFilter = filter; 
+            player.inventoryFilter = filter; 
+            renderCharacterScreenContent(); 
+        }
+
+        function renderShop() { 
+            let html = `<h2>Shop</h2><p>Purchase equipment to aid your journey. (GP: ${player.gp})</p>`;
+            
+            html += `<div class="filters-container">
+                        <button class="${shopFilter === 'All' ? 'active' : ''}" onclick="setShopFilterTab('All')">All</button>
+                        <button class="${shopFilter === 'Weapon' ? 'active' : ''}" onclick="setShopFilterTab('Weapon')">Weapons</button>
+                        <button class="${shopFilter === 'Shield' ? 'active' : ''}" onclick="setShopFilterTab('Shield')">Shields</button>
+                        <button class="${shopFilter === 'Helmet' ? 'active' : ''}" onclick="setShopFilterTab('Helmet')">Helmets</button>
+                        <button class="${shopFilter === 'Chest' ? 'active' : ''}" onclick="setShopFilterTab('Chest')">Armor (Chest)</button>
+                        <button class="${shopFilter === 'Gloves' ? 'active' : ''}" onclick="setShopFilterTab('Gloves')">Gloves</button>
+                        <button class="${shopFilter === 'Boots' ? 'active' : ''}" onclick="setShopFilterTab('Boots')">Boots</button>
+                        <button class="${shopFilter === 'Amulet' ? 'active' : ''}" onclick="setShopFilterTab('Amulet')">Amulets</button>
+                        </div>`;
+
+            const itemsForSale = Object.values(EQUIPMENT_DATA).filter(item => {
+                if (item.gp <= 0) return false; 
+                if (shopFilter === 'All') return true;
+                return item.type === shopFilter;
+            }); 
+
+            if (itemsForSale.length === 0) {
+                html += "<p>The Shop has no items matching this filter currently. Check back later!</p>";
+            } else {
+                itemsForSale.sort((a,b) => a.tier - b.tier || a.gp - b.gp || a.name.localeCompare(b.name)).forEach(item => { 
+                    const canAfford = player.gp >= item.gp;
+                    const escapedItemName = JSON.stringify(item.name);
+                    html += `<div class="item-details">
+                        <strong>${item.name}</strong> (Tier ${item.tier}, ${item.type}) <span class="item-stats">(${getItemStatString(item)})</span><br>
+                        <em>${item.description || ''}</em><br>
+                        Cost: ${item.gp} GP
+                        <button onclick='buyItem(${escapedItemName})' ${!canAfford ? 'disabled title="Not enough GP!"' : ''}>Buy</button>
+                    </div>`;
+                });
+            }
+            mainContent.innerHTML = html;
+            controls.innerHTML = `<button onclick="changeState('mainMenu')">Back to Menu</button>`;
+        }
+         function setShopFilterTab(filter) { 
+            shopFilter = filter; 
+            renderShop();
+        }
+        
+
+        function renderTowerMenu() { 
+            // This function will be expanded to show floor selection
+            mainContent.innerHTML = `<h2>Tower Climb</h2>
+                <p>Highest Floor Cleared: ${player.tower.highestFloorCleared}</p>
+                <p>Select a floor to attempt:</p>
+                <div class="button-grid">`;
+            
+            for (let i = 1; i <= TOWER_FLOORS_DATA.length; i++) {
+                if (i <= player.tower.highestFloorCleared + 1) {
+                    const floorData = TOWER_FLOORS_DATA[i-1];
+                    mainContent.innerHTML += `<button onclick="startTowerClimb(${i})">Floor ${i}: ${floorData.name}</button>`;
+                } else {
+                    mainContent.innerHTML += `<button disabled>Floor ${i} (Locked)</button>`;
+                }
+            }
+            mainContent.innerHTML += `</div>`;
+            controls.innerHTML = `<button onclick="changeState('mainMenu')">Back to Menu</button>`;
+        }
+
+        function renderCombatScreen() { 
+            // This will be the main combat UI
+            if (!combatState.active || !combatState.currentMonster) {
+                addLog("Error: Combat state not properly initialized.", "error");
+                changeState('mainMenu'); // Or 'inTowerMenu'
+                return;
+            }
+
+            let html = `<h2>Combat - Floor ${player.tower.currentFloor}</h2>`;
+            
+            // Display Monster Info
+            const monster = combatState.currentMonster;
+            html += `<div class="monster-info">
+                        <h4>${monster.name} (Lvl ${monster.tier})</h4>
+                        <p>HP: ${monster.currentHp} / ${monster.maxHp}</p>
+                        <!-- Add more monster details if desired, e.g., status effects -->
+                     </div>`;
+            
+            // Player Actions
+            html += `<h3>Your Turn!</h3>`;
+
+            mainContent.innerHTML = html; 
+            
+            controls.innerHTML = `
+                <div class="button-grid">
+                    <button onclick="playerAttack()">Attack</button>
+                    <button onclick="showSkillSelection()">Skills</button>
+                    <button onclick="showItemSelection()">Items</button>
+                    <button onclick="playerDefend()">Defend</button>
+                </div>
+                <button onclick="attemptToFlee()">Flee</button> 
+            `;
+        }
+        
+        function showSkillSelection() { 
+            let skillButtons = '<h3>Select Skill:</h3> <div class="button-grid">';
+            let hasUsableSkill = false;
+            for (const skillName in player.skills) {
+                if (player.skills[skillName] > 0 && SKILL_DATA[skillName] && SKILL_DATA[skillName].type === "Active") {
+                    const skillDef = SKILL_DATA[skillName];
+                    const resourceType = skillDef.resource; 
+                    const cost = ACTIVE_SKILL_USAGE_COSTS[skillDef.tier]; 
+                    const currentResource = resourceType === "Stamina" ? player.derivedStats.currentStamina : player.derivedStats.currentMana;
+                    const escapedSkillName = JSON.stringify(skillName);
+                    skillButtons += `<button onclick='playerUseSkill(${escapedSkillName})' ${currentResource < cost ? 'disabled' : ''}>
+                                        ${skillName} (${cost} ${resourceType})
+                                     </button>`; 
+                    hasUsableSkill = true;
+                }
+            }
+            skillButtons += `</div>`;
+            if (!hasUsableSkill) skillButtons += "<p>No active skills learned or available.</p>";
+            skillButtons += `<button onclick="changeState('inCombat')">Back to Combat</button>`; 
+            controls.innerHTML = skillButtons; 
+        }
+        
+        function showItemSelection() { 
+            controls.innerHTML = `<p>No items available for use in combat currently.</p> <button onclick="changeState('inCombat')">Back to Combat</button>`;
+        }
+
+        function grantGp(amount) {
+            player.gp += amount;
+            addLog(`💰 Granted ${amount} GP. Total GP: ${player.gp}`, "success");
+            updateDisplay();
+            saveGame();
+        }
+
+        function submitExercise() { 
+            const light = parseInt(document.getElementById('lightMinutes').value) || 0;
+            const moderate = parseInt(document.getElementById('moderateMinutes').value) || 0;
+            const vigorous = parseInt(document.getElementById('vigorousMinutes').value) || 0;
+
+            const totalMinutes = light + moderate + vigorous;
+            if (totalMinutes <= 0) {
+                addLog("No exercise duration entered.", "warning");
+                return;
+            }
+             if (totalMinutes > 240) { 
+                addLog("Cannot log more than 240 minutes at a time for GP calculation.", "warning");
+                return;
+            }
+            
+            const today = new Date().toDateString();
+            if (player.onboarding.lastExerciseDate !== today) {
+                dailyGpEarnedFromExercise = 0; 
+                player.onboarding.lastExerciseDate = today;
+            }
+
+            let gpFromThisSession = (light * 0.5) + (moderate * 1.5) + (vigorous * 2.5);
+            let actualGpAwarded = 0;
+
+            if (dailyGpEarnedFromExercise < DAILY_GP_CAP_FROM_EXERCISE) {
+                actualGpAwarded = Math.min(gpFromThisSession, DAILY_GP_CAP_FROM_EXERCISE - dailyGpEarnedFromExercise);
+                player.gp += actualGpAwarded;
+                dailyGpEarnedFromExercise += actualGpAwarded;
+                addLog(`Logged ${totalMinutes} minutes of exercise. Earned ${actualGpAwarded.toFixed(1)} GP. (Today: ${dailyGpEarnedFromExercise.toFixed(1)}/${DAILY_GP_CAP_FROM_EXERCISE})`, "success");
+            } else {
+                addLog(`Logged ${totalMinutes} minutes of exercise. Daily GP cap reached. No GP earned.`, "info");
+            }
+            
+            player.onboarding.workoutsLogged++;
+            
+            if (player.onboarding.tutorialStep === 0 || player.onboarding.tutorialStep === 1) {
+                unlockAllCoreStatsAndGrantGear(); 
+            } else if (!player.onboarding.canLevelStatsWithGP && player.onboarding.statsUnlockedCount === 4) {
+                player.onboarding.canLevelStatsWithGP = true; 
+                addLog("All core stats were awakened! You can now spend GP to level them up.", "success");
+            }
+            
+            saveGame();
+            updateDisplay(); 
+            changeState('mainMenu');
+        }
+
+        function unlockAllCoreStatsAndGrantGear() { 
+            if (player.onboarding.statsUnlockedCount < 4) {
+                player.stats.STR = 1;
+                player.stats.END = 1;
+                player.stats.AGI = 1;
+                player.stats.FOC = 1;
+                player.onboarding.statsUnlockedCount = 4;
+                player.onboarding.canLevelStatsWithGP = true; 
+                addLog("All core attributes awakened to Level 1!", "success");
+
+                if (EQUIPMENT_DATA["Wooden Stick"] && player.equipment.hasOwnProperty('weapon')) {
+                    equipItem("Wooden Stick"); 
+                }
+                if (EQUIPMENT_DATA["Tattered Loincloth"] && player.equipment.hasOwnProperty('chest')) {
+                    equipItem("Tattered Loincloth");
+                }
+                addLog("The quartermaster provides basic gear. Check your Character screen!", "info");
+                
+                addLog("You can now spend Game Points (GP) to enhance your attributes or learn skills.", "info");
+                addLog("Tutorial: Visit 'Character' screen. Try learning 'Power Strike' under the 'Skills' tab. Combat is currently under reconstruction.", "info");
+                player.onboarding.tutorialStep = 2; 
+                saveGame();
+                updateDisplay(); 
+            }
+             changeState('mainMenu'); 
+        }
+        
+        function calculateStatUpgradeCost(statName) { 
+            const currentLevel = player.stats[statName];
+            if (currentLevel === 0 && !player.onboarding.canLevelStatsWithGP) return 0; 
+            if (currentLevel >= 25) return Infinity; 
+            return Math.round(STAT_COST_BASE * Math.pow(STAT_COST_MULTIPLIER, currentLevel )); 
+        }
+
+        function upgradeStat(statName) { 
+            if (!player.onboarding.canLevelStatsWithGP) {
+                addLog("Core stats are not yet upgradeable with GP. Complete initial workout.", "warning");
+                return;
+            }
+            const currentLevel = player.stats[statName];
+            if (currentLevel >= 25) { 
+                addLog(`${statName} is already at max level (25).`, "warning");
+                return;
+            }
+            const cost = calculateStatUpgradeCost(statName);
+            if (player.gp >= cost) { 
+                player.gp -= cost;
+                player.stats[statName]++;
+                addLog(`${statName} upgraded to Level ${player.stats[statName]}! (-${cost} GP)`, "success");
+                saveGame();
+                calculateDerivedStats(); 
+                updateDisplay();
+                if(gameState === 'viewingCharacter') renderCharacterScreenContent(); 
+            } else {
+                 addLog(`Not enough GP to upgrade ${statName}. Cost: ${cost} GP. You have: ${player.gp} GP.`, "error");
+            }
+        }
+
+        function learnOrLevelSkill(skillName) { 
+            const skillDef = SKILL_DATA[skillName];
+            if (!skillDef) { addLog(`Skill ${skillName} not found.`, 'error'); return; }
+            
+            const currentLevel = player.skills[skillName] || 0;
+            if (currentLevel >= skillDef.levels.length) {
+                addLog(`${skillName} is already at max level.`, 'warning'); return;
+            }
+
+            if (currentLevel === 0 && skillDef.prerequisites) {
+                for (const pKey in skillDef.prerequisites) {
+                    const requiredValue = skillDef.prerequisites[pKey];
+                    if (SKILL_DATA[pKey] && pKey !== skillName) { 
+                        if ((player.skills[pKey] || 0) < requiredValue) {
+                            addLog(`Requires ${pKey} Level ${requiredValue} to learn ${skillName}. You have Lvl ${(player.skills[pKey] || 0)}.`, "warning");
+                            return;
+                        }
+                    } else if (player.stats[pKey.toUpperCase()] !== undefined ) { 
+                        if (getPlayerTotalStat(pKey.toUpperCase()) < requiredValue) {
+                            addLog(`Requires ${pKey.toUpperCase()} ${requiredValue} (Total) to learn ${skillName}. (Your Total: ${getPlayerTotalStat(pKey.toUpperCase())})`, "warning");
+                            return;
+                        }
+                    }
+                }
+            }
+            
+            let actualCostKey = 'unlock';
+            if (currentLevel > 0) {
+                actualCostKey = 'level' + (currentLevel + 1); 
+            }
+            
+            const cost = SKILL_COSTS_TIERED[skillDef.tier][actualCostKey]; 
+
+            if (player.gp >= cost) {
+                player.gp -= cost;
+                player.skills[skillName] = currentLevel + 1;
+                addLog(`${skillName} ${currentLevel === 0 ? 'learned' : 'upgraded to Level ' + (currentLevel + 1)}! (-${cost} GP)`, 'success');
+                
+                if (skillName === "Power Strike" && currentLevel === 0 && player.onboarding.tutorialStep === 2) {
+                    addLog("Excellent! 'Power Strike' will serve you well. You can now attempt the Tower Climb from the main menu.", "info");
+                    player.onboarding.tutorialStep = 3; // Advance tutorial
+                }
+
+                saveGame();
+                updateDisplay(); 
+                if(gameState === 'viewingCharacter') renderCharacterScreenContent();
+            } else {
+                 addLog(`Not enough GP for ${skillName}. Cost: ${cost} GP. You have: ${player.gp} GP.`, 'error');
+            }
+        }
+
+        function buyItem(itemName) {
+            const item = EQUIPMENT_DATA[itemName];
+            if (!item) { addLog(`Item ${itemName} not found in shop.`, 'error'); return; }
+             if (item.gp === undefined || item.gp <= 0) { 
+                addLog(`Item ${itemName} is not available for purchase.`, "error"); return;
+            }
+            
+            if (item.tier === 0) { 
+                addLog(`Cannot purchase starter item: ${itemName}.`, 'warning'); return;
+            } else { 
+                if (player.gp >= item.gp) {
+                    player.gp -= item.gp;
+                    player.inventory.push(itemName); 
+                    addLog(`Purchased ${itemName}! It's in your inventory. (-${item.gp} GP)`, 'success');
+                } else {
+                    addLog(`Not enough GP to buy ${itemName}. Cost: ${item.gp} GP. You have: ${player.gp} GP.`, 'error');
+                    return; 
+                }
+            }
+            saveGame();
+            updateDisplay();
+            renderShop(); 
+        }
+
+        function usePotionOutsideCombat(potionName) {
+            addLog(`Potion: ${potionName} - (Functionality not yet implemented).`, 'info');
+            console.log("usePotionOutsideCombat called with:", potionName);
+        }
+
+        function playerUsePotionInCombat(potionName) {
+            addLog(`Combat Potion: ${potionName} - (Functionality not yet implemented).`, 'info');
+            console.log("playerUsePotionInCombat called with:", potionName);
+        }
+        
+        function equipItemFromInventoryWrapper(itemName) {
+            addLog(`Equip from Inv: ${itemName} - Attempting...`, 'info');
+            console.log("equipItemFromInventoryWrapper called with:", itemName);
+            equipItem(itemName); 
+            if (gameState === 'viewingCharacter' && characterScreenTab === 'Equipment') {
+                renderCharacterScreenContent();
+            }
+        }
+
+        function sellItem(itemName) {
+            console.log("sellItem called with:", itemName);
+            const itemData = EQUIPMENT_DATA[itemName];
+            if (!itemData) {
+                addLog(`Cannot sell '${itemName}', item data not found.`, 'error');
+                return;
+            }
+            const sellValue = Math.floor((itemData.gp || 0) / 2);
+            if (sellValue <= 0 && itemData.gp > 0) { 
+                 addLog(`${itemName} cannot be sold for GP.`, 'warning');
+            } else if (sellValue > 0) {
+                const invIndex = player.inventory.indexOf(itemName);
+                if (invIndex > -1) {
+                    player.inventory.splice(invIndex, 1);
+                    player.gp += sellValue;
+                    addLog(`Sold ${itemName} for ${sellValue} GP.`, 'success');
+                    saveGame();
+                    updateDisplay();
+                    if (gameState === 'viewingCharacter' && characterScreenTab === 'Equipment') {
+                        renderCharacterScreenContent();
+                    }
+                } else {
+                    addLog(`Item ${itemName} not found in your inventory to sell.`, 'error');
+                }
+            } else {
+                 addLog(`${itemName} has no sell value.`, 'warning');
+            }
+        }
+
+        function handleRespec() {
+            addLog("Respec - (Functionality not yet implemented).", 'info');
+            console.log("handleRespec called");
+        }
+
+        // --- COMBAT LOGIC --- 
+        function startTowerClimb(floorNumber) { 
+            player.tower.currentFloor = floorNumber;
+            player.tower.currentEncounterIndex = 0;
+            player.tower.floorMonsterInstances = []; // Clear previous floor's instances
+
+            const floorData = TOWER_FLOORS_DATA.find(f => f.floor === floorNumber);
+            if (!floorData) {
+                addLog(`Error: Data for floor ${floorNumber} not found.`, 'error');
+                changeState('mainMenu');
+                return;
+            }
+            addLog(`Entering ${floorData.name} (Floor ${floorNumber}). ${floorData.description}`, "info");
+
+            // Handle floor entry trap/event
+            if (floorData.trap && floorData.trap.type === "check_on_enter") {
+                // Basic stat check for now, can be expanded
+                let success = false;
+                if (floorData.trap.stat && player.stats[floorData.trap.stat.toUpperCase()] >= (floorData.trap.dc || 10)) {
+                    success = true;
+                }
+                if (success) {
+                    addLog(floorData.trap.success.text, "success");
+                    // Apply success effect if any (not in current design, but could be added)
+                } else {
+                    addLog(floorData.trap.failure.text, "warning");
+                    if (floorData.trap.failure.effect && floorData.trap.failure.effect.type === "debuff_next_combat") {
+                        // Store this debuff to be applied at the start of the first combat
+                        combatState.pendingPlayerDebuff = floorData.trap.failure.effect; 
+                    } else if (floorData.trap.failure.effect && floorData.trap.failure.effect.type === "damage"){
+                        player.derivedStats.currentHp -= floorData.trap.failure.effect.amount;
+                        if(player.derivedStats.currentHp < 0) player.derivedStats.currentHp = 0;
+                        updateDisplay();
+                        if(player.derivedStats.currentHp === 0) {
+                            addLog("The trap was too much! You collapse...", "error");
+                            // Handle defeat outside combat (e.g., return to menu)
+                            changeState('mainMenu');
+                            return;
+                        }
+                    }
+                }
+            }
+             // Handle floor environment effect
+            if (floorData.environmentEffect) {
+                addLog(floorData.environmentEffect.message, "info");
+                // Actual application of environment effects will happen during combat setup or per turn
+                combatState.currentFloorEnvironmentEffect = floorData.environmentEffect;
+            } else {
+                combatState.currentFloorEnvironmentEffect = null;
+            }
+
+
+            startNextEncounter();
+        }
+
+        function startNextEncounter() {
+            const floorData = TOWER_FLOORS_DATA.find(f => f.floor === player.tower.currentFloor);
+            if (!floorData || player.tower.currentEncounterIndex >= floorData.encounters.length) {
+                // Floor cleared
+                addLog(`Floor ${player.tower.currentFloor} cleared!`, "victory");
+                if (player.tower.currentFloor > player.tower.highestFloorCleared) {
+                    player.tower.highestFloorCleared = player.tower.currentFloor;
+                    addLog(`You can now access Floor ${player.tower.highestFloorCleared + 1}.`, "success");
+                }
+                if (floorData.rewards.gp) {
+                    player.gp += floorData.rewards.gp;
+                    addLog(`Received ${floorData.rewards.gp} GP!`, "success");
+                }
+                if (floorData.rewards.items && floorData.rewards.items.length > 0) {
+                    floorData.rewards.items.forEach(itemName => {
+                        if (EQUIPMENT_DATA[itemName]) {
+                            player.inventory.push(itemName);
+                            addLog(`Found: ${itemName}!`, "success");
+                        }
+                    });
+                }
+                saveGame();
+                changeState('inTowerMenu');
+                return;
+            }
+
+            const encounterData = floorData.encounters[player.tower.currentEncounterIndex];
+            player.tower.floorMonsterInstances = encounterData.monsters.map(monsterName => {
+                const baseMonster = MONSTER_DATA_EXPANDED[monsterName];
+                if (!baseMonster) {
+                    console.error(`Monster data for ${monsterName} not found!`);
+                    return null; // Or a default monster
+                }
+                // Create an instance with current HP etc.
+                return { 
+                    ...JSON.parse(JSON.stringify(baseMonster)), // Deep copy
+                    maxHp: baseMonster.hp,
+                    currentHp: baseMonster.hp,
+                    statusEffects: [] 
+                };
+            }).filter(m => m !== null);
+
+            if (player.tower.floorMonsterInstances.length === 0) {
+                addLog("No monsters in this encounter. Moving on.", "info");
+                player.tower.currentEncounterIndex++;
+                startNextEncounter();
+                return;
+            }
+            
+            // For now, combat is against the first monster in the list.
+            // This will need to be expanded for multiple monsters.
+            combatState = {
+                active: true,
+                playerTurn: true,
+                currentMonster: player.tower.floorMonsterInstances[0], // Simplified: fight one at a time
+                playerStatusEffects: [], 
+                // pendingPlayerDebuff might be set by floor trap
+            };
+
+            // Apply pending debuff from floor trap if it exists
+            if (combatState.pendingPlayerDebuff) {
+                addLog(combatState.pendingPlayerDebuff.message, "warning");
+                // applyStatusEffect(player, combatState.pendingPlayerDebuff); // TODO: Implement applyStatusEffect for player
+                delete combatState.pendingPlayerDebuff;
+            }
+
+
+            addLog(`Encounter ${player.tower.currentEncounterIndex + 1}: ${combatState.currentMonster.name} appears!`, "combat");
+            changeState('inCombat');
+        }
+
+
+        function playerAttack() { 
+            if (!combatState.active || !combatState.playerTurn) return;
+            addLog("Player Attack - (Basic functionality, needs expansion).", "combat");
+            // Basic attack logic:
+            const weaponName = player.equipment.weapon;
+            const weapon = weaponName ? EQUIPMENT_DATA[weaponName] : { baseDmg: 2 }; // Fists
+            let playerDamage = getPlayerTotalStat('STR') / 2 + (weapon.baseDmg || 0); // Simplified damage
+            playerDamage = Math.max(1, Math.floor(playerDamage - (combatState.currentMonster.defense || 0)));
+
+            combatState.currentMonster.currentHp -= playerDamage;
+            addLog(`You attack the ${combatState.currentMonster.name} for ${playerDamage} damage.`, "success");
+
+            if (combatState.currentMonster.currentHp <= 0) {
+                addLog(`${combatState.currentMonster.name} defeated!`, "victory");
+                player.gp += combatState.currentMonster.gpReward || 0;
+                addLog(`Gained ${combatState.currentMonster.gpReward || 0} GP.`, "success");
+                // TODO: Handle loot drops
+
+                player.tower.currentEncounterIndex++;
+                startNextEncounter(); // Move to next encounter or clear floor
+            } else {
+                combatState.playerTurn = false;
+                updateDisplay(); // Update monster HP display
+                renderCombatScreen(); // Re-render to show updated monster HP
+                setTimeout(monsterTurn, 1000); // Monster's turn after a delay
+            }
+        }
+
+        function playerUseSkill(skillName) { 
+            if (!combatState.active || !combatState.playerTurn) return;
+            addLog(`Player Skill: ${skillName} - (Combat functionality not yet implemented).`, "player-skill");
+            // TODO: Implement skill effects, resource costs
+            // For now, just acts like a basic attack
+            playerAttack(); 
+        }
+        function playerDefend() { 
+            if (!combatState.active || !combatState.playerTurn) return;
+            addLog("Player Defend - (Combat functionality not yet implemented). You brace for impact.", "info");
+            // TODO: Apply a 'Defending' status effect that reduces damage taken
+            combatState.playerTurn = false;
+            setTimeout(monsterTurn, 1000);
+        }
+
+        function monsterTurn() {
+            if (!combatState.active || combatState.playerTurn || combatState.currentMonster.currentHp <= 0) return;
+            addLog("Monster Turn - (Basic functionality, needs expansion).", "combat");
+            
+            let monsterDamage = combatState.currentMonster.attack - (getPlayerTotalStat('END') / 3); // Simplified defense
+            monsterDamage = Math.max(1, Math.floor(monsterDamage));
+
+            player.derivedStats.currentHp -= monsterDamage;
+            addLog(`The ${combatState.currentMonster.name} attacks you for ${monsterDamage} damage.`, "error");
+
+            if (player.derivedStats.currentHp <= 0) {
+                player.derivedStats.currentHp = 0;
+                addLog("You have been defeated!", "error");
+                // Handle player defeat (e.g., return to tower menu, lose some GP/progress)
+                changeState('inTowerMenu'); // Simplified: just go back to tower menu
+            } else {
+                combatState.playerTurn = true;
+                updateDisplay();
+                renderCombatScreen(); // Re-render for player's turn
+            }
+        }
+        
+        function attemptToFlee() {
+            if (!combatState.active) return;
+            addLog("You attempt to flee...", "info");
+            // Simple flee mechanic for now
+            const fleeChance = 0.5 + (getPlayerTotalStat('AGI') * 0.01) - (combatState.currentMonster.speed * 0.005);
+            if (Math.random() < fleeChance) {
+                addLog("Successfully fled from combat!", "success");
+                changeState('inTowerMenu');
+            } else {
+                addLog("Failed to flee!", "warning");
+                combatState.playerTurn = false;
+                setTimeout(monsterTurn, 1000);
+            }
+        }
+
+
+        function changeState(newState) {
+            gameState = newState;
+            if (newState !== 'inCombat' && newState !== 'unlockingStat' && newState !== 'nameEntry' && newState !== 'selectingTarget') { 
+                if (player && player.derivedStats) { 
+                    calculateDerivedStats(); 
+                    if (newState !== 'inTowerMenu') { // Don't restore HP/Mana if just navigating tower menu
+                        player.derivedStats.currentHp = player.derivedStats.maxHp;
+                        player.derivedStats.currentStamina = player.derivedStats.maxStamina;
+                        player.derivedStats.currentMana = player.derivedStats.maxMana;
+                    }
+                }
+            }
+            updateDisplay(); 
+            switch (newState) {
+                case 'nameEntry': 
+                case 'mainMenu': renderMainMenu(); break;
+                case 'loggingExercise': renderExerciseLogScreen(); break;
+                case 'viewingCharacter': 
+                    characterScreenTab = player.characterScreenTab || 'Stats'; 
+                    renderCharacterScreen(); 
+                    break; 
+                case 'inShop': renderShop(); break;
+                case 'inTowerMenu': renderTowerMenu(); break; 
+                case 'inCombat': renderCombatScreen(); break; 
+            }
+        }
+
+        function updateDisplay() { updateStatsDisplay(); }
+        
+        function manualSaveGame() { 
+            saveGame();
+            addLog("💾 Game Saved!", "success");
+        }
+
+        function saveGame() { 
+            if (!player) return; 
+            player.onboarding.dailyGpEarnedToday = dailyGpEarnedFromExercise; 
+            player.characterScreenTab = characterScreenTab; 
+            player.inventoryFilter = inventoryFilter; 
+            try { localStorage.setItem('fitForgePrototypeSave_v1_10_11', JSON.stringify(player)); } 
+            catch (e) { console.error("Save Error:", e); addLog("Save failed.", "warning"); }
+        }
+
+        function loadGame() { 
+            try {
+                const savedGame = localStorage.getItem('fitForgePrototypeSave_v1_10_11'); 
+                if (savedGame) {
+                    const loadedPlayer = JSON.parse(savedGame);
+                    player = JSON.parse(JSON.stringify(initialPlayerState)); 
+                    
+                    for (const key in loadedPlayer) {
+                        if (loadedPlayer.hasOwnProperty(key) && player.hasOwnProperty(key) && typeof player[key] === 'object' && player[key] !== null && !Array.isArray(player[key])) {
+                            player[key] = { ...player[key], ...loadedPlayer[key] };
+                        } else if (loadedPlayer.hasOwnProperty(key)) {
+                            player[key] = loadedPlayer[key];
+                        }
+                    }
+                    player.stats = { ...initialPlayerState.stats, ...(loadedPlayer.stats || {}) };
+                    player.skills = { ...initialPlayerState.skills, ...(loadedPlayer.skills || {}) };
+                    player.equipment = { ...initialPlayerState.equipment, ...(loadedPlayer.equipment || {}) };
+                    player.inventory = loadedPlayer.inventory || [];
+                    player.potions = loadedPlayer.potions || {}; 
+                    player.derivedStats = { ...initialPlayerState.derivedStats, ...(loadedPlayer.derivedStats || {}) }; 
+                    player.tower = { ...initialPlayerState.tower, ...(loadedPlayer.tower || {}) }; // Ensure tower progress is loaded
+                    player.onboarding = { ...initialPlayerState.onboarding, ...(loadedPlayer.onboarding || {}) };
+                    player.respec = { ...initialPlayerState.respec, ...(loadedPlayer.respec || {}) };
+
+                    characterScreenTab = loadedPlayer.characterScreenTab || 'Stats'; 
+                    inventoryFilter = loadedPlayer.inventoryFilter || 'All'; 
+                    
+                    const today = new Date().toDateString();
+                    if (player.onboarding.lastExerciseDate !== today) {
+                        dailyGpEarnedFromExercise = 0; 
+                    } else {
+                        dailyGpEarnedFromExercise = player.onboarding.dailyGpEarnedToday || 0; 
+                    }
+ 
+                    if (gameState !== 'inCombat' && player.onboarding.nameSet) { 
+                        calculateDerivedStats(); 
+                        // Don't fully restore if loading into a tower state later
+                        if (gameState !== 'inTowerMenu' && gameState !== 'inCombat') {
+                           player.derivedStats.currentHp = player.derivedStats.maxHp;
+                           player.derivedStats.currentStamina = player.derivedStats.maxStamina;
+                           player.derivedStats.currentMana = player.derivedStats.maxMana;
+                        } else if (player.derivedStats.currentHp === 0 && gameState === 'inTowerMenu') { // If loaded defeated in tower menu
+                            player.derivedStats.currentHp = 1; // Give 1 HP to not be stuck
+                        }
+                    }
+                    if(player.playerName && player.playerName !== "Recruit") gameHeader.textContent = `Fit Forge - ${player.playerName}`;
+                    addLog(`Game loaded (v1.10.11) for ${player.playerName}.`, "info");
+                } else { initializeNewGame(); }
+            } catch (e) {
+                console.error("Load Error:", e); addLog("Load failed, initializing new game.", "error");
+                initializeNewGame();
+            }
+        }
+        
+        function initializeNewGame() { 
+            player = JSON.parse(JSON.stringify(initialPlayerState)); 
+            player.stats = { STR: 0, END: 0, AGI: 0, FOC: 0 }; 
+            player.onboarding.statsUnlockedCount = 0;
+            player.onboarding.canLevelStatsWithGP = false;
+            player.onboarding.nameSet = false; 
+            player.onboarding.tutorialStep = 0; 
+
+            player.potions = {}; 
+            dailyGpEarnedFromExercise = 0;
+            player.onboarding.lastExerciseDate = new Date().toDateString(); 
+            player.onboarding.dailyGpEarnedToday = 0; 
+            
+            player.equipment = JSON.parse(JSON.stringify(initialPlayerState.equipment));
+            inventoryFilter = 'All'; 
+
+            calculateDerivedStats(); 
+            player.derivedStats.currentHp = player.derivedStats.maxHp;
+            player.derivedStats.currentStamina = player.derivedStats.maxStamina;
+            player.derivedStats.currentMana = player.derivedStats.maxMana;
+            
+            saveGame(); 
+            addLog("New game started. Welcome!", "info");
+        }
+
+        window.changeState = changeState;
+        window.setPlayerName = setPlayerName;
+        window.adjustExerciseTime = adjustExerciseTime;
+        window.submitExercise = submitExercise;
+        window.unlockAllCoreStatsAndGrantGear = unlockAllCoreStatsAndGrantGear; 
+        window.upgradeStat = upgradeStat;
+        window.learnOrLevelSkill = learnOrLevelSkill;
+        window.setCharacterScreenTab = setCharacterScreenTab;
+        window.setCharacterEquipmentInventoryFilter = setCharacterEquipmentInventoryFilter; 
+        window.setInventoryFilterTab = setInventoryFilterTab; 
+        window.setShopFilterTab = setShopFilterTab;
+        window.unequipItem = unequipItem;
+        window.equipItemFromInventoryWrapper = equipItemFromInventoryWrapper; 
+        window.sellItem = sellItem; 
+        window.usePotionOutsideCombat = usePotionOutsideCombat; 
+        window.buyItem = buyItem;
+        window.handleRespec = handleRespec; 
+        window.grantGp = grantGp;
+        window.manualSaveGame = manualSaveGame;
+        // Combat related functions
+        window.startTowerClimb = startTowerClimb;
+        window.playerAttack = playerAttack;
+        window.showSkillSelection = showSkillSelection;
+        window.playerUseSkill = playerUseSkill; 
+        window.showItemSelection = showItemSelection;
+        window.playerUsePotionInCombat = playerUsePotionInCombat; 
+        window.playerDefend = playerDefend;
+        window.attemptToFlee = attemptToFlee;
+        
+        window.onload = () => {
+            loadGame(); 
+            if (!player.onboarding.nameSet) {
+                changeState('mainMenu'); 
+            } else {
+                characterScreenTab = player.characterScreenTab || 'Stats'; 
+                inventoryFilter = player.inventoryFilter || 'All'; 
+                changeState('mainMenu'); 
+            }
+            updateDisplay(); 
+        };
+    </script>
+</body>
+</html>
