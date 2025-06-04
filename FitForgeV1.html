@@ -51,6 +51,22 @@
             margin: 5px 0;
             line-height: 1.4;
         }
+        .log-player-action { /* Default alignment for player actions */
+            text-align: left;
+        }
+        .log-enemy-action {
+            text-align: right;
+            color: #ffaeae; /* Slightly different color for enemy actions */
+        }
+         .log-critical {
+            font-weight: bold;
+            color: #ffd700; /* Gold for crits */
+        }
+        .log-status {
+            font-style: italic;
+            color: #add8e6; /* Light blue for status effects */
+        }
+
 
         .stats-display {
             padding: 15px;
@@ -141,6 +157,20 @@
         }
         .controls .tab-buttons button.active {
             background-color: #007acc;
+        }
+        .controls .skill-button-combat { /* For combat skill buttons */
+            font-size: 0.85em;
+            padding: 8px 10px;
+            text-align: left; /* Align text to left for better readability */
+            white-space: normal; /* Allow text to wrap */
+            height: auto; /* Adjust height based on content */
+            line-height: 1.3;
+        }
+        .controls .skill-button-combat .skill-effect-text {
+            display: block;
+            font-size: 0.9em;
+            color: #cccccc; /* Lighter color for effect text */
+            margin-top: 3px;
         }
         
         input[type="number"] {
@@ -286,9 +316,12 @@
 
     <script>
         // --- GAME DATA DEFINITIONS ---
-        const BASE_HP = 50;
-        const BASE_STAMINA = 30;
-        const BASE_MANA = 30;
+        const BASE_HP = 15; 
+        const HP_FROM_END = 8; 
+        const HP_FROM_STR = 2; 
+
+        const BASE_STAMINA = 10; 
+        const BASE_MANA = 10;    
 
         const STAT_COST_BASE = 15;
         const STAT_COST_MULTIPLIER = 1.25;
@@ -301,6 +334,13 @@
         
         const ACTIVE_SKILL_USAGE_COSTS = { 1: 15, 2: 25, 3: 40 }; 
         const DAILY_GP_CAP_FROM_EXERCISE = 150;
+        const REGEN_TIME_FULL_SECONDS = 6 * 60 * 60; 
+        const MONSTER_ITEM_DROP_CHANCE = 0.15; 
+
+        const DAMAGE_VARIANCE = 0.10; 
+        const BASE_CRIT_CHANCE = 0.05; 
+        const BASE_CRIT_MULTIPLIER = 1.5; 
+        const AGI_TO_CRIT_CHANCE_RATIO = 0.005; 
         
         const SKILL_DATA = {
             "Power Strike": { name: "Power Strike", class: "Vanguard", tier: 1, type: "Active", resource: "Stamina", description: "A focused melee attack.", prerequisites: { STR: 2 }, levels: [{ level: 1, effectText: "Deals 125% weapon damage.", multiplier: 1.25 },{ level: 2, effectText: "Deals 135% weapon damage.", multiplier: 1.35 },{ level: 3, effectText: "Deals 150% weapon damage.", multiplier: 1.50 }]},
@@ -335,8 +375,8 @@
             "Tattered Loincloth":{ name: "Tattered Loincloth", type: "Chest", tier: 0, end: 1, gp: 0, description: "Barely decent." },
             
             // Tier 1 Items
-            "Rusty Dagger": { name: "Rusty Dagger", type: "Weapon", tier: 1, agi: 1, baseDmg: 8, gp: 25, description: "A rusty but sharp dagger." },
-            "Short Sword": { name: "Short Sword", type: "Weapon", tier: 1, str: 2, baseDmg: 10, gp: 35, description: "A basic, reliable short sword." },
+            "Rusty Dagger": { name: "Rusty Dagger", type: "Weapon", tier: 1, agi: 1, baseDmg: 8, gp: 45, description: "A rusty but sharp dagger." }, 
+            "Short Sword": { name: "Short Sword", type: "Weapon", tier: 1, str: 2, baseDmg: 10, gp: 60, description: "A basic, reliable short sword." }, 
             "Leather Scraps": { name: "Leather Scraps", type: "Chest", tier: 1, end: 2, gp: 30, description: "Scraps of leather, crudely tied." },
             "Padded Shirt": { name: "Padded Shirt", type: "Chest", tier: 1, end: 3, agi: 1, gp: 40, description: "A thick shirt offering minimal protection." },
             "Wooden Buckler": { name: "Wooden Buckler", type: "Shield", tier: 1, end: 2, gp: 20, description: "A small wooden shield." },
@@ -346,50 +386,75 @@
             "Simple Iron Pendant": { name: "Simple Iron Pendant", type: "Amulet", tier: 1, foc: 1, gp: 22, description: "A plain iron pendant on a cord." },
 
             // Tier 2 Items
-            "Steel Mace": { name: "Steel Mace", type: "Weapon", tier: 2, str: 4, end: 1, baseDmg: 18, gp: 120, description: "A hefty steel mace, good for crushing blows." },
-            "Elm Shortbow": { name: "Elm Shortbow", type: "Weapon", tier: 2, agi: 3, foc: 1, baseDmg: 15, gp: 110, description: "A flexible shortbow made of elm wood." },
+            "Steel Mace": { name: "Steel Mace", type: "Weapon", tier: 2, str: 4, end: 1, baseDmg: 18, gp: 200, description: "A hefty steel mace, good for crushing blows." }, 
+            "Elm Shortbow": { name: "Elm Shortbow", type: "Weapon", tier: 2, agi: 3, foc: 1, baseDmg: 15, gp: 180, description: "A flexible shortbow made of elm wood." }, 
             "Chainmail Vest": { name: "Chainmail Vest", type: "Chest", tier: 2, end: 5, str: 1, gp: 150, description: "A vest of interlocking steel rings." },
             "Reinforced Kite Shield": { name: "Reinforced Kite Shield", type: "Shield", tier: 2, end: 4, str: 1, gp: 90, description: "A sturdy kite shield with metal reinforcements." },
             "Steel Sallet": { name: "Steel Sallet", type: "Helmet", tier: 2, end: 3, str: 1, gp: 75, description: "A common steel helmet offering decent head protection." },
             "Leather Gauntlets": { name: "Leather Gauntlets", type: "Gloves", tier: 2, str: 1, agi: 2, gp: 60, description: "Sturdy leather gauntlets." },
             "Steel Greaves": { name: "Steel Greaves", type: "Boots", tier: 2, end: 2, str: 2, gp: 80, description: "Protective steel coverings for the lower legs." },
             "Enchanted Silver Locket": { name: "Enchanted Silver Locket", type: "Amulet", tier: 2, foc: 3, gp: 100, description: "A silver locket humming with faint arcane energy." },
+
+            // Potions
+            "Minor Health Potion": { name: "Minor Health Potion", type: "Potion", tier: 1, gp: 25, description: "A common brew that restores a small amount of health.", effect: { restore: "HP", amount: 20 } },
+            "Minor Stamina Potion": { name: "Minor Stamina Potion", type: "Potion", tier: 1, gp: 20, description: "A concoction that slightly revitalizes your energy.", effect: { restore: "Stamina", amount: 15 } },
+            "Minor Mana Potion": { name: "Minor Mana Potion", type: "Potion", tier: 1, gp: 30, description: "A weak infusion that recovers a bit of magical energy.", effect: { restore: "Mana", amount: 15 } },
         };
 
         const MONSTER_DATA_EXPANDED = {
             // Tier 0 (Floor 1-2)
-            "Giant Rat": { name: "Giant Rat", tier: 0, hp: 15, attack: 3, defense: 1, speed: 10, abilities: [], gpReward: 2, loot: ["Rat Tail"], ai: "Mindless" },
-            "Cave Bat": { name: "Cave Bat", tier: 0, hp: 10, attack: 2, defense: 0, speed: 15, abilities: [], gpReward: 1, loot: ["Bat Wing"], ai: "Mindless" },
+            "Giant Rat": { name: "Giant Rat", tier: 0, hp: 15, attack: 3, defense: 1, speed: 10, abilities: [], gpReward: 0, loot: ["Worn Leather Boots", "Cloth Handwraps", "Minor Health Potion"], ai: "Mindless" }, 
+            "Cave Bat": { name: "Cave Bat", tier: 0, hp: 10, attack: 2, defense: 0, speed: 15, abilities: [], gpReward: 0, loot: ["Leather Cap"], ai: "Mindless" }, 
             // Tier 1 (Floor 2-4)
-            "Goblin Scout": { name: "Goblin Scout", tier: 1, hp: 20, attack: 5, defense: 2, speed: 12, abilities: [{name: "Quick Stab", type: "Attack", damageMultiplier: 0.8, chance: 0.3}], gpReward: 5, loot: ["Goblin Ear", "Rusty Dagger"], ai: "Brute" },
-            "Giant Spider": { name: "Giant Spider", tier: 1, hp: 25, attack: 4, defense: 3, speed: 8, abilities: [{name: "Poison Bite", type: "AttackDebuff", damageMultiplier: 0.7, status: "Poison", duration: 2, chance: 0.25}], gpReward: 6, loot: ["Spider Silk", "Spider Fang"], ai: "Brute" },
-            "Hobgoblin Thug": { name: "Hobgoblin Thug", tier: 1, hp: 35, attack: 7, defense: 4, speed: 7, abilities: [{name: "Heavy Blow", type: "Attack", damageMultiplier: 1.3, accuracyModifier: -0.1, chance: 0.3}], gpReward: 10, loot: ["Hobgoblin Badge", "Short Sword"], ai: "Brute" },
-            "Orc Grunt": { name: "Orc Grunt", tier: 1, hp: 40, attack: 8, defense: 5, speed: 6, abilities: [{name: "War Cry", type: "BuffSelf", stat: "attack", amount: 1, duration: 2, chance: 0.2, flavor: "The Orc Grunt lets out a deafening war cry!"}], gpReward: 12, loot: ["Orc Tusk", "Padded Shirt"], ai: "Brute" },
+            "Goblin Scout": { name: "Goblin Scout", tier: 1, hp: 20, attack: 5, defense: 2, speed: 12, abilities: [{name: "Quick Stab", type: "Attack", damageMultiplier: 0.8, chance: 0.3}], gpReward: 0, loot: ["Goblin Ear", "Rusty Dagger", "Minor Stamina Potion"], ai: "Brute" },
+            "Giant Spider": { name: "Giant Spider", tier: 1, hp: 25, attack: 4, defense: 3, speed: 8, abilities: [{name: "Poison Bite", type: "AttackDebuff", damageMultiplier: 0.7, status: "Poison", duration: 2, chance: 0.25}], gpReward: 0, loot: ["Spider Silk", "Spider Fang", "Simple Iron Pendant"], ai: "Brute" },
+            "Hobgoblin Thug": { name: "Hobgoblin Thug", tier: 1, hp: 35, attack: 7, defense: 4, speed: 7, abilities: [{name: "Heavy Blow", type: "Attack", damageMultiplier: 1.3, accuracyModifier: -0.1, chance: 0.3}], gpReward: 0, loot: ["Hobgoblin Badge", "Short Sword", "Minor Health Potion"], ai: "Brute" },
+            "Orc Grunt": { name: "Orc Grunt", tier: 1, hp: 40, attack: 8, defense: 5, speed: 6, abilities: [{name: "War Cry", type: "BuffSelf", stat: "attack", amount: 1, duration: 2, chance: 0.2, flavor: "The Orc Grunt lets out a deafening war cry!"}], gpReward: 0, loot: ["Orc Tusk", "Padded Shirt"], ai: "Brute" },
             // Tier 2 (Floor 5-8)
-            "Orc Berserker": { name: "Orc Berserker", tier: 2, hp: 60, attack: 10, defense: 3, speed: 8, abilities: [{name: "Reckless Attack", type: "AttackDebuffSelf", damageMultiplier: 1.5, selfDebuff: {stat: "defense", amount: -2, duration:1}, chance: 0.4}, {name: "Enrage", type: "BuffSelfConditional", condition: {hpPercentBelow: 0.4}, stat: "attack", amount: 3, duration: 3, once: true, flavor: "The Orc Berserker flies into a rage!"}], gpReward: 25, loot: ["Berserker Axe Piece", "Chainmail Vest"], ai: "Tactical" },
-            "Skeletal Warrior": { name: "Skeletal Warrior", tier: 2, hp: 45, attack: 9, defense: 6, speed: 5, resistances: {piercing: 0.5}, vulnerabilities: {blunt: 1.5}, abilities: [], gpReward: 18, loot: ["Bone Shard", "Steel Sallet"], ai: "Standard" },
-            "Shadow Lurker": { name: "Shadow Lurker", tier: 2, hp: 30, attack: 10, defense: 2, speed: 18, evasion: 0.2, abilities: [{name: "Shadow Step", type: "BuffSelf", stat: "evasion", amount: 0.2, duration: 2, chance: 0.3}], gpReward: 20, loot: ["Shadowy Essence", "Leather Gauntlets"], ai: "Tactical" },
-            "Dire Wolf": { name: "Dire Wolf", tier: 2, hp: 50, attack: 11, defense: 4, speed: 14, abilities: [{name: "Howl (Pack Tactics)", type: "BuffAllyConditional", condition: {allyType: "Dire Wolf", count: 1}, stat: "attack", amount: 2, duration: 2, chance: 0.3, flavor: "The Dire Wolf howls, emboldening its pack!"}], gpReward: 22, loot: ["Dire Wolf Pelt", "Steel Greaves"], ai: "Tactical" },
-            "Goblin Shaman": { name: "Goblin Shaman", tier: 2, hp: 35, attack: 5, defense: 3, speed: 10, abilities: [{name: "Weak Bolt", type: "MagicAttack", baseDamage: 8, scalingStat: "FOC", scaleFactor: 0.5, chance: 0.5}, {name: "Minor Heal", type: "HealAlly", baseHeal: 10, target: "lowestHPAlly", chance: 0.3}], gpReward: 20, loot: ["Shamanic Totem", "Simple Iron Pendant"], ai: "Intelligent" },
+            "Orc Berserker": { name: "Orc Berserker", tier: 2, hp: 60, attack: 10, defense: 3, speed: 8, abilities: [{name: "Reckless Attack", type: "AttackDebuffSelf", damageMultiplier: 1.5, selfDebuff: {stat: "defense", amount: -2, duration:1}, chance: 0.4}, {name: "Enrage", type: "BuffSelfConditional", condition: {hpPercentBelow: 0.4}, stat: "attack", amount: 3, duration: 3, once: true, flavor: "The Orc Berserker flies into a rage!"}], gpReward: 0, loot: ["Berserker Axe Piece", "Chainmail Vest", "Minor Stamina Potion"], ai: "Tactical" },
+            "Skeletal Warrior": { name: "Skeletal Warrior", tier: 2, hp: 45, attack: 9, defense: 6, speed: 5, resistances: {piercing: 0.5}, vulnerabilities: {blunt: 1.5}, abilities: [], gpReward: 0, loot: ["Bone Shard", "Steel Sallet"], ai: "Standard" },
+            "Shadow Lurker": { name: "Shadow Lurker", tier: 2, hp: 30, attack: 10, defense: 2, speed: 18, evasion: 0.2, abilities: [{name: "Shadow Step", type: "BuffSelf", stat: "evasion", amount: 0.2, duration: 2, chance: 0.3}], gpReward: 0, loot: ["Shadowy Essence", "Leather Gauntlets"], ai: "Tactical" },
+            "Dire Wolf": { name: "Dire Wolf", tier: 2, hp: 50, attack: 11, defense: 4, speed: 14, abilities: [{name: "Howl (Pack Tactics)", type: "BuffAllyConditional", condition: {allyType: "Dire Wolf", count: 1}, stat: "attack", amount: 2, duration: 2, chance: 0.3, flavor: "The Dire Wolf howls, emboldening its pack!"}], gpReward: 0, loot: ["Dire Wolf Pelt", "Steel Greaves"], ai: "Tactical" },
+            "Goblin Shaman": { name: "Goblin Shaman", tier: 2, hp: 35, attack: 5, defense: 3, speed: 10, abilities: [{name: "Weak Bolt", type: "MagicAttack", baseDamage: 8, scalingStat: "FOC", scaleFactor: 0.5, chance: 0.5}, {name: "Minor Heal", type: "HealAlly", baseHeal: 10, target: "lowestHPAlly", chance: 0.3}], gpReward: 0, loot: ["Shamanic Totem", "Simple Iron Pendant", "Minor Mana Potion"], ai: "Intelligent" },
             // Tier 3 (Floor 9-10)
-            "Armored Sentry": { name: "Armored Sentry", tier: 3, hp: 70, attack: 12, defense: 10, speed: 4, abilities: [{name: "Shield Bash", type: "AttackDebuff", damageMultiplier: 0.8, status: "Stun", duration: 1, chance: 0.25}], gpReward: 35, loot: ["Sentry Armor Scrap", "Reinforced Kite Shield"], ai: "Standard" },
-            "Cultist Acolyte": { name: "Cultist Acolyte", tier: 3, hp: 50, attack: 7, defense: 5, speed: 9, abilities: [{name: "Dark Bolt", type: "MagicAttack", baseDamage: 12, scalingStat: "FOC", scaleFactor: 0.8, chance: 0.6}, {name: "Curse of Weakness", type: "DebuffPlayer", stat: "attack", amount: -3, duration: 3, chance: 0.3}], gpReward: 30, loot: ["Unholy Symbol", "Enchanted Silver Locket"], ai: "Intelligent" },
-            "Minotaur Novice": { name: "Minotaur Novice", tier: 3, hp: 80, attack: 15, defense: 7, speed: 6, abilities: [{name: "Charge", type: "Attack", damageMultiplier: 1.5, firstTurnOnly: true, chance: 0.8, flavor: "The Minotaur Novice charges!"}, {name: "Powerful Swing", type: "Attack", damageMultiplier: 1.2, chance: 0.5}], gpReward: 50, loot: ["Minotaur Horn Fragment", "Steel Mace"], ai: "Brute" },
-            "Cave Troll": { name: "Cave Troll", tier: 3, hp: 100, attack: 14, defense: 6, speed: 5, abilities: [{name: "Regeneration", type: "HealSelf", baseHeal: 5, perTurn: true}, {name: "Fearsome Roar", type: "DebuffPlayer", stat: "defense", amount: -2, duration: 2, chance: 0.2}], gpReward: 60, loot: ["Troll Hide", "Elm Shortbow"], ai: "Brute" },
-            "Ogre Chieftain": { name: "Ogre Chieftain", tier: 3, hp: 120, attack: 16, defense: 8, speed: 7, abilities: [{name: "Mighty Cleave", type: "Attack", damageMultiplier: 1.3, hitsAll: false, chance: 0.4}, {name: "Roar of Command", type: "DebuffPlayer", stat: "all", amount: -1, duration: 2, chance: 0.3, flavor: "The Ogre Chieftain's roar shakes the room!"}, {name: "Thick Hide", type: "Passive", damageReductionFlat: 2}], gpReward: 100, loot: ["Chieftain's Club", "Ogre Eye"], ai: "TacticalBoss" }
+            "Armored Sentry": { name: "Armored Sentry", tier: 3, hp: 70, attack: 12, defense: 10, speed: 4, abilities: [{name: "Shield Bash", type: "AttackDebuff", damageMultiplier: 0.8, status: "Stun", duration: 1, chance: 0.25}], gpReward: 0, loot: ["Sentry Armor Scrap", "Reinforced Kite Shield"], ai: "Standard" },
+            "Cultist Acolyte": { name: "Cultist Acolyte", tier: 3, hp: 50, attack: 7, defense: 5, speed: 9, abilities: [{name: "Dark Bolt", type: "MagicAttack", baseDamage: 12, scalingStat: "FOC", scaleFactor: 0.8, chance: 0.6}, {name: "Curse of Weakness", type: "DebuffPlayer", stat: "attack", amount: -3, duration: 3, chance: 0.3}], gpReward: 0, loot: ["Unholy Symbol", "Enchanted Silver Locket", "Minor Mana Potion"], ai: "Intelligent" },
+            "Minotaur Novice": { name: "Minotaur Novice", tier: 3, hp: 80, attack: 15, defense: 7, speed: 6, abilities: [{name: "Charge", type: "Attack", damageMultiplier: 1.5, firstTurnOnly: true, chance: 0.8, flavor: "The Minotaur Novice charges!"}, {name: "Powerful Swing", type: "Attack", damageMultiplier: 1.2, chance: 0.5}], gpReward: 0, loot: ["Minotaur Horn Fragment", "Steel Mace"], ai: "Brute" },
+            "Cave Troll": { name: "Cave Troll", tier: 3, hp: 100, attack: 14, defense: 6, speed: 5, abilities: [{name: "Regeneration", type: "HealSelf", baseHeal: 5, perTurn: true}, {name: "Fearsome Roar", type: "DebuffPlayer", stat: "defense", amount: -2, duration: 2, chance: 0.2}], gpReward: 0, loot: ["Troll Hide", "Elm Shortbow"], ai: "Brute" },
+            "Ogre Chieftain": { name: "Ogre Chieftain", tier: 3, hp: 120, attack: 16, defense: 8, speed: 7, abilities: [{name: "Mighty Cleave", type: "Attack", damageMultiplier: 1.3, hitsAll: false, chance: 0.4}, {name: "Roar of Command", type: "DebuffPlayer", stat: "all", amount: -1, duration: 2, chance: 0.3, flavor: "The Ogre Chieftain's roar shakes the room!"}, {name: "Thick Hide", type: "Passive", damageReductionFlat: 2}], gpReward: 0, loot: ["Chieftain's Club", "Ogre Eye"], ai: "TacticalBoss" } 
         };
         
         const TOWER_FLOORS_DATA = [
-            { floor: 1, name: "Dusty Storeroom", description: "Old crates and cobwebs fill this forgotten storeroom.", encounters: [ { monsters: ["Giant Rat", "Giant Rat"] }, { monsters: ["Cave Bat"] } ], environmentEffect: null, trap: null, rewards: {gp: 10} },
-            { floor: 2, name: "Crumbling Passage", description: "The passage ahead is unstable.", encounters: [ { monsters: ["Goblin Scout"] }, { monsters: ["Giant Rat", "Cave Bat", "Giant Rat"] } ], environmentEffect: null, trap: {type: "choice", text: "Loose stones litter the path. [A]ttempt to navigate carefully (AGI check), or [P]roceed normally?", success: { text: "You navigate the stones deftly.", effect: null }, failure: { text: "You stumble, losing 5 HP.", effect: {type: "damage", amount: 5} } }, rewards: {gp: 15, items: ["Cloth Handwraps"]} },
-            { floor: 3, name: "Damp Cave", description: "The air is heavy with moisture, making exertion more taxing.", encounters: [ { monsters: ["Giant Spider"] }, { monsters: ["Hobgoblin Thug"] } ], environmentEffect: { type: "stat_modifier", target: "player", stat: "staminaCost", amount: 1, message: "The damp air increases stamina costs by 1 this floor." }, trap: null, rewards: {gp: 20} },
-            { floor: 4, name: "Narrow Ledge", description: "You must traverse a precarious narrow ledge.", encounters: [ { monsters: ["Cave Bat", "Cave Bat", "Goblin Scout"] }, { monsters: ["Orc Grunt"] } ], environmentEffect: null, trap: {type: "check_on_enter", stat: "AGI", dc: 12, success: {text: "You cross the ledge with ease."}, failure: {text: "You nearly slip! Start your next combat slightly off-balance.", effect: {type: "debuff_next_combat", stat: "AGI", amount: -0.1, duration: 2, message: "You start the fight off-balance (-10% AGI for 2 turns)!"} } }, rewards: {gp: 25, items: ["Leather Cap"]} },
-            { floor: 5, name: "Chieftain's Den", description: "Crude Orcish totems line the walls of this den, an Orc Berserker stands guard.", encounters: [ { monsters: ["Orc Berserker"] } ], environmentEffect: { type: "monster_buff", monsterType: "Orc", stat: "attack", amount: 0.05, message: "Orcs in this den seem emboldened (+5% damage)." }, trap: null, rewards: {gp: 50, items: ["Short Sword"]} },
-            { floor: 6, name: "Ancient Crypt", description: "A chilling aura permeates this crypt. The air itself seems to drain your vitality.", encounters: [ { monsters: ["Skeletal Warrior", "Skeletal Warrior"] }, { monsters: ["Shadow Lurker"] } ], environmentEffect: { type: "damage_per_turn", target: "all_living", amount: 1, message: "The crypt's chilling aura drains 1 HP from all living beings each turn." }, trap: null, rewards: {gp: 30} },
-            { floor: 7, name: "Wolf Den", description: "The scent of wild beasts is strong. The wolves here are fiercely territorial.", encounters: [ { monsters: ["Dire Wolf"] }, { monsters: ["Dire Wolf", "Goblin Shaman"] } ], environmentEffect: { type: "monster_buff", monsterType: "Dire Wolf", stat: "AGI", amount: 0.1, message: "Wolves in this den are quicker (+10% AGI)." }, trap: {type: "choice", text: "A half-eaten carcass lies nearby. [I]nvestigate it, or [L]eave it be?", success: {text: "You find a discarded Potion of Minor Healing!", effect: {type: "gain_item", item: "Minor Health Potion"} }, failure: {text: "It was a trap! A hidden snare springs, dealing 10 damage.", effect: {type: "damage", amount: 10} } }, rewards: {gp: 35, items: ["Wooden Buckler"]} },
-            { floor: 8, name: "Guard Barracks", description: "This chamber appears to be an old guard barracks. Weapon racks line the walls.", encounters: [ { monsters: ["Armored Sentry"] }, { monsters: ["Cultist Acolyte", "Skeletal Warrior"] } ], environmentEffect: null, trap: null, rewards: {gp: 40} },
-            { floor: 9, name: "Labyrinthine Tunnels", description: "The tunnels twist and turn, the stale air is disorienting.", encounters: [ { monsters: ["Minotaur Novice"] }, { monsters: ["Cave Troll"] } ], environmentEffect: { type: "chance_debuff_player", status: "Dazed", chance: 0.15, duration: 1, message: "The confusing tunnels might daze you at the start of combat (-10% accuracy for 1 turn)." }, trap: null, rewards: {gp: 60, items: ["Steel Mace"]} },
-            { floor: 10, name: "Throne Room Antechamber", description: "Imposing, weathered statues glare down from alcoves. The air is heavy with anticipation.", encounters: [ { monsters: ["Ogre Chieftain"] } ], environmentEffect: { type: "stat_modifier", target: "player", stat: "FOC", amount: -0.05, message: "The imposing statues are unnerving (-5% FOC this floor)." }, trap: null, rewards: {gp: 150, items: ["Enchanted Silver Locket"]} }
+            { floor: 1, name: "Dusty Storeroom", description: "Old crates and cobwebs fill this forgotten storeroom.", 
+              encounters: [ { monsters: ["Giant Rat"] }, { monsters: ["Cave Bat"] }, { monsters: ["Giant Rat", "Cave Bat"] }, { monsters: ["Giant Rat", "Giant Rat"] } ], 
+              environmentEffect: null, trap: null, rewards: {gp: 0, items: ["Cloth Handwraps"]} }, 
+            { floor: 2, name: "Crumbling Passage", description: "The passage ahead is unstable.", 
+              encounters: [ { monsters: ["Goblin Scout"] }, { monsters: ["Giant Rat", "Cave Bat"] }, { monsters: ["Goblin Scout", "Giant Rat"] }, { monsters: ["Giant Spider"] } ], 
+              environmentEffect: null, trap: {type: "choice", text: "Loose stones litter the path. [A]ttempt to navigate carefully (AGI check), or [P]roceed normally?", success: { text: "You navigate the stones deftly.", effect: null }, failure: { text: "You stumble, losing 5 HP.", effect: {type: "damage", amount: 5} } }, rewards: {gp: 0, items: ["Leather Cap"]} },
+            { floor: 3, name: "Damp Cave", description: "The air is heavy with moisture, making exertion more taxing.", 
+              encounters: [ { monsters: ["Giant Spider", "Cave Bat"] }, { monsters: ["Hobgoblin Thug"] }, { monsters: ["Goblin Scout", "Goblin Scout"] }, { monsters: ["Giant Spider", "Giant Spider"] } ], 
+              environmentEffect: { type: "stat_modifier", target: "player", stat: "staminaCost", amount: 1, message: "The damp air increases stamina costs by 1 this floor." }, trap: null, rewards: {gp: 0, items: ["Rusty Dagger"]} },
+            { floor: 4, name: "Narrow Ledge", description: "You must traverse a precarious narrow ledge.", 
+              encounters: [ { monsters: ["Cave Bat", "Cave Bat", "Cave Bat"] }, { monsters: ["Orc Grunt"] }, { monsters: ["Hobgoblin Thug", "Goblin Scout"] }, { monsters: ["Orc Grunt", "Cave Bat"] } ], 
+              environmentEffect: null, trap: {type: "check_on_enter", stat: "AGI", dc: 12, success: {text: "You cross the ledge with ease."}, failure: {text: "You nearly slip! Start your next combat slightly off-balance.", effect: {type: "debuff_next_combat", stat: "AGI", amount: -0.1, duration: 2, message: "You start the fight off-balance (-10% AGI for 2 turns)!"} } }, rewards: {gp: 0, items: ["Padded Shirt"]} },
+            { floor: 5, name: "Chieftain's Den", description: "Crude Orcish totems line the walls of this den.", 
+              encounters: [ { monsters: ["Orc Grunt"] }, { monsters: ["Goblin Scout", "Orc Grunt"] }, { monsters: ["Hobgoblin Thug", "Hobgoblin Thug"] }, { monsters: ["Orc Grunt", "Orc Grunt"] }, { monsters: ["Orc Berserker"] } ], 
+              environmentEffect: { type: "monster_buff", monsterType: "Orc", stat: "attack", amount: 0.05, message: "Orcs in this den seem emboldened (+5% damage)." }, trap: null, rewards: {gp: 0, items: ["Short Sword", "Chainmail Vest"]} },
+            { floor: 6, name: "Ancient Crypt", description: "A chilling aura permeates this crypt. The air itself seems to drain your vitality.", 
+              encounters: [ { monsters: ["Skeletal Warrior"] }, { monsters: ["Shadow Lurker"] }, { monsters: ["Skeletal Warrior", "Cave Bat"] }, { monsters: ["Skeletal Warrior", "Shadow Lurker"] } ], 
+              environmentEffect: { type: "damage_per_turn", target: "all_living", amount: 1, message: "The crypt's chilling aura drains 1 HP from all living beings each turn." }, trap: null, rewards: {gp: 0, items: ["Steel Sallet"]} },
+            { floor: 7, name: "Wolf Den", description: "The scent of wild beasts is strong. The wolves here are fiercely territorial.", 
+              encounters: [ { monsters: ["Dire Wolf"] }, { monsters: ["Goblin Shaman", "Dire Wolf"] }, { monsters: ["Dire Wolf", "Dire Wolf"] }, { monsters: ["Shadow Lurker", "Goblin Scout"] } ], 
+              environmentEffect: { type: "monster_buff", monsterType: "Dire Wolf", stat: "AGI", amount: 0.1, message: "Wolves in this den are quicker (+10% AGI)." }, trap: {type: "choice", text: "A half-eaten carcass lies nearby. [I]nvestigate it, or [L]eave it be?", success: {text: "You find a discarded Minor Health Potion!", effect: {type: "gain_item", item: "Minor Health Potion"} }, failure: {text: "It was a trap! A hidden snare springs, dealing 10 damage.", effect: {type: "damage", amount: 10} } }, rewards: {gp: 0, items: ["Wooden Buckler"]} },
+            { floor: 8, name: "Guard Barracks", description: "This chamber appears to be an old guard barracks. Weapon racks line the walls.", 
+              encounters: [ { monsters: ["Armored Sentry"] }, { monsters: ["Cultist Acolyte"] }, { monsters: ["Skeletal Warrior", "Armored Sentry"] }, { monsters: ["Cultist Acolyte", "Shadow Lurker"] } ], 
+              environmentEffect: null, trap: null, rewards: {gp: 0, items: ["Leather Gauntlets"]} },
+            { floor: 9, name: "Labyrinthine Tunnels", description: "The tunnels twist and turn, the stale air is disorienting.", 
+              encounters: [ { monsters: ["Minotaur Novice"] }, { monsters: ["Cave Troll"] }, { monsters: ["Cultist Acolyte", "Cultist Acolyte"] }, { monsters: ["Armored Sentry", "Minotaur Novice"] } ], 
+              environmentEffect: { type: "chance_debuff_player", status: "Dazed", chance: 0.15, duration: 1, message: "The confusing tunnels might daze you at the start of combat (-10% accuracy for 1 turn)." }, trap: null, rewards: {gp: 0, items: ["Steel Mace"]} },
+            { floor: 10, name: "Throne Room Antechamber", description: "Imposing, weathered statues glare down from alcoves. The air is heavy with anticipation.", 
+              encounters: [ { monsters: ["Cave Troll"] }, { monsters: ["Minotaur Novice", "Cultist Acolyte"] }, { monsters: ["Armored Sentry", "Armored Sentry"] }, { monsters: ["Cave Troll", "Minotaur Novice"] }, { monsters: ["Ogre Chieftain"] } ], 
+              environmentEffect: { type: "stat_modifier", target: "player", stat: "FOC", amount: -0.05, message: "The imposing statues are unnerving (-5% FOC this floor)." }, trap: null, rewards: {gp: 0, items: ["Enchanted Silver Locket", "Reinforced Kite Shield"]} }
         ];
 
 
@@ -404,7 +469,7 @@
         const initialPlayerState = {
             playerName: "Recruit", 
             stats: { STR: 0, END: 0, AGI: 0, FOC: 0 },
-            gp: 50, 
+            gp: 0, 
             skills: {}, 
             equipment: { 
                 weapon: null, 
@@ -419,7 +484,16 @@
             potions: {}, 
             derivedStats: { maxHp: 0, currentHp: 0, maxStamina: 0, currentStamina: 0, maxMana: 0, currentMana: 0 },
             tower: { highestFloorCleared: 0, currentFloor: 0, currentEncounterIndex: 0, floorMonsterInstances: [] }, 
-            onboarding: { statsUnlockedCount: 0, canLevelStatsWithGP: false, workoutsLogged: 0, lastExerciseDate: null, dailyGpEarnedToday: 0, nameSet: false, tutorialStep: 0 },
+            onboarding: { 
+                statsUnlockedCount: 0, 
+                canLevelStatsWithGP: false, 
+                workoutsLogged: 0, 
+                lastExerciseDate: null, 
+                dailyGpEarnedToday: 0, 
+                nameSet: false, 
+                tutorialStep: 0,
+                lastRegenTimestamp: null 
+            },
             respec: { isFirstRespecFree: true, lastRespecTimestamp: 0 },
             inventoryFilter: 'All' 
         };
@@ -430,20 +504,36 @@
         const mainContent = document.getElementById('mainContent');
         const controls = document.getElementById('controls');
 
-        function addLog(message, type = 'info') {
-            console.log(`LOG (${type}): ${message}`); 
+        function addLog(message, type = 'info', alignment = 'left') {
+            console.log(`LOG (${type}): ${message}`);
             const p = document.createElement('p');
-            if (type === 'combat' && message.startsWith("You attack")) message = "⚔️ " + message;
-            else if (type === 'player-skill') message = "✨ " + message;
-            else if (type === 'success' && message.includes("damage")) message = "💥 " + message;
-            else if (type === 'error' && message.includes("damage")) message = "💔 " + message;
-            else if (type === 'victory' && message.includes("defeated!")) message = "☠️ " + message;
-            else if (message.includes("restore") && (message.includes("HP") || message.includes("Stamina") || message.includes("Mana"))) message = "❤️‍🩹 " + message;
-
-            p.textContent = message;
+            
+            let prefix = "";
+            if (type === 'combat' && alignment === 'left') prefix = "⚔️ "; // Player attack
+            else if (type === 'player-skill') prefix = "✨ ";
+            else if (type === 'success' && message.includes("damage")) prefix = "💥 ";
+            else if (type === 'error' && message.includes("damage") && alignment === 'left') prefix = "💔 "; // Player takes damage
+            else if (type === 'victory' && message.includes("defeated!")) prefix = "☠️ ";
+            else if (message.includes("restore") && (message.includes("HP") || message.includes("Stamina") || message.includes("Mana"))) prefix = "❤️‍🩹 ";
+            
+            p.textContent = prefix + message;
             p.className = type;
-            gameLogContainer.insertBefore(p, gameLogContainer.firstChild); 
-            while (gameLogContainer.children.length > 100) { 
+
+            if (alignment === 'right') {
+                p.classList.add('log-enemy-action');
+            } else {
+                p.classList.add('log-player-action');
+            }
+            if (message.toLowerCase().includes("critical hit")) {
+                p.classList.add('log-critical');
+            }
+             if (type === 'status') {
+                p.classList.add('log-status');
+            }
+
+
+            gameLogContainer.insertBefore(p, gameLogContainer.firstChild);
+            while (gameLogContainer.children.length > 100) {
                 gameLogContainer.removeChild(gameLogContainer.lastChild);
             }
         }
@@ -452,9 +542,9 @@
         
         function calculateDerivedStats() {
             if (!player) return; 
-            player.derivedStats.maxHp = BASE_HP + (getPlayerTotalStat('END') * 12) + (getPlayerTotalStat('STR') * 4);
-            player.derivedStats.maxStamina = BASE_STAMINA + (getPlayerTotalStat('END') * 5) + (getPlayerTotalStat('AGI') * 7);
-            player.derivedStats.maxMana = BASE_MANA + (getPlayerTotalStat('FOC') * 8) + (getPlayerTotalStat('END') * 3);
+            player.derivedStats.maxHp = BASE_HP + (getPlayerTotalStat('END') * HP_FROM_END) + (getPlayerTotalStat('STR') * HP_FROM_STR);
+            player.derivedStats.maxStamina = BASE_STAMINA + (getPlayerTotalStat('END') * 5) + (getPlayerTotalStat('AGI') * 7); 
+            player.derivedStats.maxMana = BASE_MANA + (getPlayerTotalStat('FOC') * 8) + (getPlayerTotalStat('END') * 3); 
             
             player.derivedStats.currentHp = Math.min(player.derivedStats.currentHp, player.derivedStats.maxHp);
             player.derivedStats.currentStamina = Math.min(player.derivedStats.currentStamina, player.derivedStats.maxStamina);
@@ -596,9 +686,9 @@
             if (!player || !player.derivedStats) return; 
             calculateDerivedStats(); 
             statsDisplay.innerHTML = `
-                <div>HP: ${player.derivedStats.currentHp} / ${player.derivedStats.maxHp}</div>
-                <div>Stamina: ${player.derivedStats.currentStamina} / ${player.derivedStats.maxStamina}</div>
-                <div>Mana: ${player.derivedStats.currentMana} / ${player.derivedStats.maxMana}</div>
+                <div>HP: ${player.derivedStats.currentHp.toFixed(0)} / ${player.derivedStats.maxHp}</div>
+                <div>Stamina: ${player.derivedStats.currentStamina.toFixed(0)} / ${player.derivedStats.maxStamina}</div>
+                <div>Mana: ${player.derivedStats.currentMana.toFixed(0)} / ${player.derivedStats.maxMana}</div>
                 <div>STR: ${getPlayerTotalStat('STR')} (${player.stats.STR})</div>
                 <div>END: ${getPlayerTotalStat('END')} (${player.stats.END})</div>
                 <div>AGI: ${getPlayerTotalStat('AGI')} (${player.stats.AGI})</div>
@@ -842,12 +932,14 @@
                             <button class="${inventoryFilter === 'Gloves' ? 'active' : ''}" onclick="setCharacterEquipmentInventoryFilter('Gloves')">Gloves</button>
                             <button class="${inventoryFilter === 'Boots' ? 'active' : ''}" onclick="setCharacterEquipmentInventoryFilter('Boots')">Boots</button>
                             <button class="${inventoryFilter === 'Amulet' ? 'active' : ''}" onclick="setCharacterEquipmentInventoryFilter('Amulet')">Amulets</button>
+                            <button class="${inventoryFilter === 'Potion' ? 'active' : ''}" onclick="setCharacterEquipmentInventoryFilter('Potion')">Potions</button>
                          </div>`;
 
                 const filteredInventory = player.inventory.filter(itemName => {
+                    const itemData = EQUIPMENT_DATA[itemName]; // Get item data once
+                    if (!itemData) return false; // Skip if item data doesn't exist
                     if (inventoryFilter === 'All') return true;
-                    const itemData = EQUIPMENT_DATA[itemName];
-                    return itemData && itemData.type === inventoryFilter;
+                    return itemData.type === inventoryFilter;
                 });
 
                 if (filteredInventory.length === 0) {
@@ -859,9 +951,13 @@
                             const escapedItemName = JSON.stringify(itemName);
                             html += `<div class="item-details inventory-item">
                                 <strong>${itemData.name}</strong> (${itemData.type}) <span class="item-stats">(${getItemStatString(itemData)})</span><br>
-                                <em>${itemData.description || ''}</em>
-                                <button onclick='equipItemFromInventoryWrapper(${escapedItemName})'>Equip</button>
-                                <button class='sell-button' onclick='sellItem(${escapedItemName})'>Sell (${Math.floor((itemData.gp || 0) / 2)} GP)</button>
+                                <em>${itemData.description || ''}</em>`;
+                            if (itemData.type === "Potion") {
+                                html += `<button onclick='usePotionOutsideCombat(${escapedItemName})'>Use</button>`;
+                            } else {
+                                html += `<button onclick='equipItemFromInventoryWrapper(${escapedItemName})'>Equip</button>`;
+                            }
+                            html += `<button class='sell-button' onclick='sellItem(${escapedItemName})'>Sell (${Math.floor((itemData.gp || 0) / 2)} GP)</button>
                             </div>`;
                         }
                     });
@@ -889,10 +985,11 @@
                         <button class="${shopFilter === 'Gloves' ? 'active' : ''}" onclick="setShopFilterTab('Gloves')">Gloves</button>
                         <button class="${shopFilter === 'Boots' ? 'active' : ''}" onclick="setShopFilterTab('Boots')">Boots</button>
                         <button class="${shopFilter === 'Amulet' ? 'active' : ''}" onclick="setShopFilterTab('Amulet')">Amulets</button>
+                        <button class="${shopFilter === 'Potion' ? 'active' : ''}" onclick="setShopFilterTab('Potion')">Potions</button>
                         </div>`;
 
             const itemsForSale = Object.values(EQUIPMENT_DATA).filter(item => {
-                if (item.gp <= 0) return false; 
+                if (item.gp <= 0 && item.name !== "Wooden Stick" && item.name !== "Tattered Loincloth") return false; // Don't show free items unless starter
                 if (shopFilter === 'All') return true;
                 return item.type === shopFilter;
             }); 
@@ -903,12 +1000,14 @@
                 itemsForSale.sort((a,b) => a.tier - b.tier || a.gp - b.gp || a.name.localeCompare(b.name)).forEach(item => { 
                     const canAfford = player.gp >= item.gp;
                     const escapedItemName = JSON.stringify(item.name);
-                    html += `<div class="item-details">
-                        <strong>${item.name}</strong> (Tier ${item.tier}, ${item.type}) <span class="item-stats">(${getItemStatString(item)})</span><br>
-                        <em>${item.description || ''}</em><br>
-                        Cost: ${item.gp} GP
-                        <button onclick='buyItem(${escapedItemName})' ${!canAfford ? 'disabled title="Not enough GP!"' : ''}>Buy</button>
-                    </div>`;
+                    if (item.gp > 0) { // Only show buy button for purchasable items
+                        html += `<div class="item-details">
+                            <strong>${item.name}</strong> (Tier ${item.tier}, ${item.type}) <span class="item-stats">(${getItemStatString(item)})</span><br>
+                            <em>${item.description || ''}</em><br>
+                            Cost: ${item.gp} GP
+                            <button onclick='buyItem(${escapedItemName})' ${!canAfford ? 'disabled title="Not enough GP!"' : ''}>Buy</button>
+                        </div>`;
+                    }
                 });
             }
             mainContent.innerHTML = html;
@@ -921,7 +1020,6 @@
         
 
         function renderTowerMenu() { 
-            // This function will be expanded to show floor selection
             mainContent.innerHTML = `<h2>Tower Climb</h2>
                 <p>Highest Floor Cleared: ${player.tower.highestFloorCleared}</p>
                 <p>Select a floor to attempt:</p>
@@ -940,24 +1038,20 @@
         }
 
         function renderCombatScreen() { 
-            // This will be the main combat UI
             if (!combatState.active || !combatState.currentMonster) {
                 addLog("Error: Combat state not properly initialized.", "error");
-                changeState('mainMenu'); // Or 'inTowerMenu'
+                changeState('mainMenu'); 
                 return;
             }
 
             let html = `<h2>Combat - Floor ${player.tower.currentFloor}</h2>`;
             
-            // Display Monster Info
             const monster = combatState.currentMonster;
             html += `<div class="monster-info">
                         <h4>${monster.name} (Lvl ${monster.tier})</h4>
                         <p>HP: ${monster.currentHp} / ${monster.maxHp}</p>
-                        <!-- Add more monster details if desired, e.g., status effects -->
                      </div>`;
             
-            // Player Actions
             html += `<h3>Your Turn!</h3>`;
 
             mainContent.innerHTML = html; 
@@ -979,12 +1073,16 @@
             for (const skillName in player.skills) {
                 if (player.skills[skillName] > 0 && SKILL_DATA[skillName] && SKILL_DATA[skillName].type === "Active") {
                     const skillDef = SKILL_DATA[skillName];
+                    const currentSkillLevel = player.skills[skillName];
+                    const skillLevelData = skillDef.levels[currentSkillLevel - 1];
                     const resourceType = skillDef.resource; 
                     const cost = ACTIVE_SKILL_USAGE_COSTS[skillDef.tier]; 
                     const currentResource = resourceType === "Stamina" ? player.derivedStats.currentStamina : player.derivedStats.currentMana;
                     const escapedSkillName = JSON.stringify(skillName);
-                    skillButtons += `<button onclick='playerUseSkill(${escapedSkillName})' ${currentResource < cost ? 'disabled' : ''}>
-                                        ${skillName} (${cost} ${resourceType})
+
+                    skillButtons += `<button class="skill-button-combat" onclick='playerUseSkill(${escapedSkillName})' ${currentResource < cost ? 'disabled title="Not enough '+resourceType+'!"' : ''}>
+                                        ${skillName} (Lvl ${currentSkillLevel})<br>
+                                        <span class="skill-effect-text">Cost: ${cost} ${resourceType} | ${skillLevelData.effectText}</span>
                                      </button>`; 
                     hasUsableSkill = true;
                 }
@@ -996,7 +1094,29 @@
         }
         
         function showItemSelection() { 
-            controls.innerHTML = `<p>No items available for use in combat currently.</p> <button onclick="changeState('inCombat')">Back to Combat</button>`;
+            let itemButtons = '<h3>Select Item:</h3> <div class="button-grid">';
+            let hasUsableItem = false;
+            const usablePotions = player.inventory.filter(itemName => EQUIPMENT_DATA[itemName] && EQUIPMENT_DATA[itemName].type === "Potion");
+
+            if (usablePotions.length > 0) {
+                const potionCounts = {};
+                usablePotions.forEach(pName => { potionCounts[pName] = (potionCounts[pName] || 0) + 1; });
+
+                for (const potionName in potionCounts) {
+                    const itemData = EQUIPMENT_DATA[potionName];
+                    const escapedPotionName = JSON.stringify(potionName);
+                    itemButtons += `<button class="skill-button-combat" onclick='playerUsePotionInCombat(${escapedPotionName})'>
+                                        ${potionName} (x${potionCounts[potionName]})<br>
+                                        <span class="skill-effect-text">${itemData.description}</span>
+                                     </button>`;
+                    hasUsableItem = true;
+                }
+            }
+            
+            itemButtons += `</div>`;
+            if (!hasUsableItem) itemButtons += "<p>No usable items in inventory.</p>";
+            itemButtons += `<button onclick="changeState('inCombat')">Back to Combat</button>`;
+            controls.innerHTML = itemButtons;
         }
 
         function grantGp(amount) {
@@ -1102,9 +1222,14 @@
                 player.gp -= cost;
                 player.stats[statName]++;
                 addLog(`${statName} upgraded to Level ${player.stats[statName]}! (-${cost} GP)`, "success");
-                saveGame();
+                
                 calculateDerivedStats(); 
-                updateDisplay();
+                player.derivedStats.currentHp = player.derivedStats.maxHp;
+                player.derivedStats.currentStamina = player.derivedStats.maxStamina;
+                player.derivedStats.currentMana = player.derivedStats.maxMana;
+                
+                saveGame();
+                updateDisplay(); 
                 if(gameState === 'viewingCharacter') renderCharacterScreenContent(); 
             } else {
                  addLog(`Not enough GP to upgrade ${statName}. Cost: ${cost} GP. You have: ${player.gp} GP.`, "error");
@@ -1151,7 +1276,7 @@
                 
                 if (skillName === "Power Strike" && currentLevel === 0 && player.onboarding.tutorialStep === 2) {
                     addLog("Excellent! 'Power Strike' will serve you well. You can now attempt the Tower Climb from the main menu.", "info");
-                    player.onboarding.tutorialStep = 3; // Advance tutorial
+                    player.onboarding.tutorialStep = 3; 
                 }
 
                 saveGame();
@@ -1169,7 +1294,7 @@
                 addLog(`Item ${itemName} is not available for purchase.`, "error"); return;
             }
             
-            if (item.tier === 0) { 
+            if (item.tier === 0 && item.name !== "Wooden Stick" && item.name !== "Tattered Loincloth") { 
                 addLog(`Cannot purchase starter item: ${itemName}.`, 'warning'); return;
             } else { 
                 if (player.gp >= item.gp) {
@@ -1187,13 +1312,117 @@
         }
 
         function usePotionOutsideCombat(potionName) {
-            addLog(`Potion: ${potionName} - (Functionality not yet implemented).`, 'info');
-            console.log("usePotionOutsideCombat called with:", potionName);
+            const itemIndex = player.inventory.indexOf(potionName);
+            if (itemIndex === -1) {
+                addLog(`You don't have any ${potionName}.`, "warning");
+                return;
+            }
+            const potionData = EQUIPMENT_DATA[potionName];
+            if (!potionData || potionData.type !== "Potion" || !potionData.effect) {
+                addLog(`Cannot use ${potionName} in this way.`, "error");
+                return;
+            }
+
+            let restoredAmount = 0;
+            let actuallyRestored = 0;
+            let message = "";
+
+            switch (potionData.effect.restore) {
+                case "HP":
+                    restoredAmount = potionData.effect.amount;
+                    actuallyRestored = Math.min(restoredAmount, player.derivedStats.maxHp - player.derivedStats.currentHp);
+                    player.derivedStats.currentHp += actuallyRestored;
+                    message = `Used ${potionName}. Restored ${actuallyRestored.toFixed(0)} HP.`;
+                    break;
+                case "Stamina":
+                    restoredAmount = potionData.effect.amount;
+                    actuallyRestored = Math.min(restoredAmount, player.derivedStats.maxStamina - player.derivedStats.currentStamina);
+                    player.derivedStats.currentStamina += actuallyRestored;
+                    message = `Used ${potionName}. Restored ${actuallyRestored.toFixed(0)} Stamina.`;
+                    break;
+                case "Mana":
+                    restoredAmount = potionData.effect.amount;
+                    actuallyRestored = Math.min(restoredAmount, player.derivedStats.maxMana - player.derivedStats.currentMana);
+                    player.derivedStats.currentMana += actuallyRestored;
+                    message = `Used ${potionName}. Restored ${actuallyRestored.toFixed(0)} Mana.`;
+                    break;
+                default:
+                    addLog(`Unknown effect for ${potionName}.`, "error");
+                    return;
+            }
+
+            if (actuallyRestored > 0) {
+                addLog(message, "success");
+            } else {
+                addLog(`Used ${potionName}, but you were already full on ${potionData.effect.restore}.`, "info");
+            }
+            
+            player.inventory.splice(itemIndex, 1); 
+            saveGame();
+            updateDisplay();
+            if (gameState === 'viewingCharacter' && characterScreenTab === 'Equipment') {
+                renderCharacterScreenContent(); 
+            }
         }
 
         function playerUsePotionInCombat(potionName) {
-            addLog(`Combat Potion: ${potionName} - (Functionality not yet implemented).`, 'info');
-            console.log("playerUsePotionInCombat called with:", potionName);
+            if (!combatState.active || !combatState.playerTurn) return;
+
+            const itemIndex = player.inventory.indexOf(potionName);
+            if (itemIndex === -1) {
+                addLog(`You don't have any ${potionName} to use.`, "warning");
+                changeState('inCombat'); 
+                return;
+            }
+            const potionData = EQUIPMENT_DATA[potionName];
+            if (!potionData || potionData.type !== "Potion" || !potionData.effect) {
+                addLog(`Cannot use ${potionName} in combat.`, "error");
+                changeState('inCombat');
+                return;
+            }
+
+            let restoredAmount = 0;
+            let actuallyRestored = 0;
+            let message = "";
+
+            switch (potionData.effect.restore) {
+                case "HP":
+                    restoredAmount = potionData.effect.amount;
+                    actuallyRestored = Math.min(restoredAmount, player.derivedStats.maxHp - player.derivedStats.currentHp);
+                    player.derivedStats.currentHp += actuallyRestored;
+                    message = `You use ${potionName}. Restored ${actuallyRestored.toFixed(0)} HP.`;
+                    break;
+                case "Stamina":
+                    restoredAmount = potionData.effect.amount;
+                    actuallyRestored = Math.min(restoredAmount, player.derivedStats.maxStamina - player.derivedStats.currentStamina);
+                    player.derivedStats.currentStamina += actuallyRestored;
+                    message = `You use ${potionName}. Restored ${actuallyRestored.toFixed(0)} Stamina.`;
+                    break;
+                case "Mana":
+                    restoredAmount = potionData.effect.amount;
+                    actuallyRestored = Math.min(restoredAmount, player.derivedStats.maxMana - player.derivedStats.currentMana);
+                    player.derivedStats.currentMana += actuallyRestored;
+                    message = `You use ${potionName}. Restored ${actuallyRestored.toFixed(0)} Mana.`;
+                    break;
+                default:
+                    addLog(`Unknown effect for ${potionName}.`, "error");
+                    changeState('inCombat');
+                    return;
+            }
+            
+            if (actuallyRestored > 0) {
+                addLog(message, "success");
+            } else {
+                addLog(`Used ${potionName}, but you were already full on ${potionData.effect.restore}.`, "info");
+            }
+
+            player.inventory.splice(itemIndex, 1); 
+            saveGame();
+            updateDisplay();
+
+            combatState.playerTurn = false;
+            renderCombatScreen(); 
+            setTimeout(monsterTurn, 1000);
         }
         
         function equipItemFromInventoryWrapper(itemName) {
@@ -1239,11 +1468,40 @@
             console.log("handleRespec called");
         }
 
+        // --- UTILITY: Calculate Player Crit Chance & Multiplier ---
+        function getPlayerTotalCritChance(skillBeingUsed = null) {
+            let critChance = BASE_CRIT_CHANCE;
+            critChance += getPlayerTotalStat('AGI') * AGI_TO_CRIT_CHANCE_RATIO;
+
+            if (player.skills["Precision Expert"] && SKILL_DATA["Precision Expert"]) {
+                const skillLevel = player.skills["Precision Expert"];
+                if (skillLevel > 0) {
+                    critChance += SKILL_DATA["Precision Expert"].levels[skillLevel - 1].critChanceBonus || 0;
+                }
+            }
+            if (skillBeingUsed && skillBeingUsed.levels[player.skills[skillBeingUsed.name]-1].critBonus) {
+                critChance += skillBeingUsed.levels[player.skills[skillBeingUsed.name]-1].critBonus;
+            }
+            return Math.min(critChance, 0.95); 
+        }
+
+        function getPlayerTotalCritMultiplier() {
+            let critMultiplier = BASE_CRIT_MULTIPLIER;
+            if (player.skills["Precision Expert"] && SKILL_DATA["Precision Expert"]) {
+                const skillLevel = player.skills["Precision Expert"];
+                if (skillLevel > 0) {
+                    critMultiplier += SKILL_DATA["Precision Expert"].levels[skillLevel - 1].critDmgBonus || 0;
+                }
+            }
+            return critMultiplier;
+        }
+
+
         // --- COMBAT LOGIC --- 
         function startTowerClimb(floorNumber) { 
             player.tower.currentFloor = floorNumber;
             player.tower.currentEncounterIndex = 0;
-            player.tower.floorMonsterInstances = []; // Clear previous floor's instances
+            player.tower.floorMonsterInstances = []; 
 
             const floorData = TOWER_FLOORS_DATA.find(f => f.floor === floorNumber);
             if (!floorData) {
@@ -1253,20 +1511,16 @@
             }
             addLog(`Entering ${floorData.name} (Floor ${floorNumber}). ${floorData.description}`, "info");
 
-            // Handle floor entry trap/event
             if (floorData.trap && floorData.trap.type === "check_on_enter") {
-                // Basic stat check for now, can be expanded
                 let success = false;
-                if (floorData.trap.stat && player.stats[floorData.trap.stat.toUpperCase()] >= (floorData.trap.dc || 10)) {
+                if (floorData.trap.stat && getPlayerTotalStat(floorData.trap.stat.toUpperCase()) >= (floorData.trap.dc || 10)) { 
                     success = true;
                 }
                 if (success) {
                     addLog(floorData.trap.success.text, "success");
-                    // Apply success effect if any (not in current design, but could be added)
                 } else {
                     addLog(floorData.trap.failure.text, "warning");
                     if (floorData.trap.failure.effect && floorData.trap.failure.effect.type === "debuff_next_combat") {
-                        // Store this debuff to be applied at the start of the first combat
                         combatState.pendingPlayerDebuff = floorData.trap.failure.effect; 
                     } else if (floorData.trap.failure.effect && floorData.trap.failure.effect.type === "damage"){
                         player.derivedStats.currentHp -= floorData.trap.failure.effect.amount;
@@ -1274,46 +1528,41 @@
                         updateDisplay();
                         if(player.derivedStats.currentHp === 0) {
                             addLog("The trap was too much! You collapse...", "error");
-                            // Handle defeat outside combat (e.g., return to menu)
                             changeState('mainMenu');
                             return;
                         }
                     }
                 }
             }
-             // Handle floor environment effect
             if (floorData.environmentEffect) {
                 addLog(floorData.environmentEffect.message, "info");
-                // Actual application of environment effects will happen during combat setup or per turn
                 combatState.currentFloorEnvironmentEffect = floorData.environmentEffect;
             } else {
                 combatState.currentFloorEnvironmentEffect = null;
             }
-
-
             startNextEncounter();
         }
 
         function startNextEncounter() {
             const floorData = TOWER_FLOORS_DATA.find(f => f.floor === player.tower.currentFloor);
             if (!floorData || player.tower.currentEncounterIndex >= floorData.encounters.length) {
-                // Floor cleared
                 addLog(`Floor ${player.tower.currentFloor} cleared!`, "victory");
                 if (player.tower.currentFloor > player.tower.highestFloorCleared) {
                     player.tower.highestFloorCleared = player.tower.currentFloor;
                     addLog(`You can now access Floor ${player.tower.highestFloorCleared + 1}.`, "success");
                 }
-                if (floorData.rewards.gp) {
-                    player.gp += floorData.rewards.gp;
-                    addLog(`Received ${floorData.rewards.gp} GP!`, "success");
-                }
+                // Removed GP reward from floor clear
                 if (floorData.rewards.items && floorData.rewards.items.length > 0) {
-                    floorData.rewards.items.forEach(itemName => {
+                    let itemsFoundMessage = "Items found: ";
+                    let foundAny = false;
+                    floorData.rewards.items.forEach((itemName, index) => {
                         if (EQUIPMENT_DATA[itemName]) {
                             player.inventory.push(itemName);
-                            addLog(`Found: ${itemName}!`, "success");
+                            itemsFoundMessage += itemName + (index < floorData.rewards.items.length - 1 ? ", " : ".");
+                            foundAny = true;
                         }
                     });
+                    if (foundAny) addLog(itemsFoundMessage, "success");
                 }
                 saveGame();
                 changeState('inTowerMenu');
@@ -1325,11 +1574,10 @@
                 const baseMonster = MONSTER_DATA_EXPANDED[monsterName];
                 if (!baseMonster) {
                     console.error(`Monster data for ${monsterName} not found!`);
-                    return null; // Or a default monster
+                    return null; 
                 }
-                // Create an instance with current HP etc.
                 return { 
-                    ...JSON.parse(JSON.stringify(baseMonster)), // Deep copy
+                    ...JSON.parse(JSON.stringify(baseMonster)), 
                     maxHp: baseMonster.hp,
                     currentHp: baseMonster.hp,
                     statusEffects: [] 
@@ -1343,23 +1591,17 @@
                 return;
             }
             
-            // For now, combat is against the first monster in the list.
-            // This will need to be expanded for multiple monsters.
             combatState = {
                 active: true,
                 playerTurn: true,
-                currentMonster: player.tower.floorMonsterInstances[0], // Simplified: fight one at a time
+                currentMonster: player.tower.floorMonsterInstances[0], 
                 playerStatusEffects: [], 
-                // pendingPlayerDebuff might be set by floor trap
             };
 
-            // Apply pending debuff from floor trap if it exists
             if (combatState.pendingPlayerDebuff) {
                 addLog(combatState.pendingPlayerDebuff.message, "warning");
-                // applyStatusEffect(player, combatState.pendingPlayerDebuff); // TODO: Implement applyStatusEffect for player
                 delete combatState.pendingPlayerDebuff;
             }
-
 
             addLog(`Encounter ${player.tower.currentEncounterIndex + 1}: ${combatState.currentMonster.name} appears!`, "combat");
             changeState('inCombat');
@@ -1368,73 +1610,213 @@
 
         function playerAttack() { 
             if (!combatState.active || !combatState.playerTurn) return;
-            addLog("Player Attack - (Basic functionality, needs expansion).", "combat");
-            // Basic attack logic:
+            
             const weaponName = player.equipment.weapon;
-            const weapon = weaponName ? EQUIPMENT_DATA[weaponName] : { baseDmg: 2 }; // Fists
-            let playerDamage = getPlayerTotalStat('STR') / 2 + (weapon.baseDmg || 0); // Simplified damage
-            playerDamage = Math.max(1, Math.floor(playerDamage - (combatState.currentMonster.defense || 0)));
+            const weapon = weaponName ? EQUIPMENT_DATA[weaponName] : { baseDmg: 2 }; 
+            let basePlayerDamage = (getPlayerTotalStat('STR') / 2) + (weapon.baseDmg || 0); 
+            
+            const varianceAmount = basePlayerDamage * DAMAGE_VARIANCE;
+            let actualPlayerDamage = basePlayerDamage + (Math.random() * varianceAmount * 2) - varianceAmount;
 
-            combatState.currentMonster.currentHp -= playerDamage;
-            addLog(`You attack the ${combatState.currentMonster.name} for ${playerDamage} damage.`, "success");
+            const critChance = getPlayerTotalCritChance();
+            let isCrit = false;
+            if (Math.random() < critChance) {
+                isCrit = true;
+                const critMultiplier = getPlayerTotalCritMultiplier();
+                actualPlayerDamage *= critMultiplier;
+            }
+            
+            actualPlayerDamage = Math.max(1, Math.floor(actualPlayerDamage - (combatState.currentMonster.defense || 0)));
+
+            combatState.currentMonster.currentHp -= actualPlayerDamage;
+            addLog(`You attack the ${combatState.currentMonster.name} for ${actualPlayerDamage} damage.${isCrit ? ' 💥 CRITICAL HIT! 💥' : ''}`, "success");
+
 
             if (combatState.currentMonster.currentHp <= 0) {
                 addLog(`${combatState.currentMonster.name} defeated!`, "victory");
-                player.gp += combatState.currentMonster.gpReward || 0;
-                addLog(`Gained ${combatState.currentMonster.gpReward || 0} GP.`, "success");
-                // TODO: Handle loot drops
+                
+                // Item Drop Logic (No GP from monster defeat)
+                if (combatState.currentMonster.loot && combatState.currentMonster.loot.length > 0) {
+                    if (Math.random() < MONSTER_ITEM_DROP_CHANCE) {
+                        const droppedItemName = combatState.currentMonster.loot[Math.floor(Math.random() * combatState.currentMonster.loot.length)];
+                        if (EQUIPMENT_DATA[droppedItemName]) {
+                            player.inventory.push(droppedItemName);
+                            addLog(`The ${combatState.currentMonster.name} dropped: ${droppedItemName}!`, "success");
+                        }
+                    }
+                }
 
                 player.tower.currentEncounterIndex++;
-                startNextEncounter(); // Move to next encounter or clear floor
+                startNextEncounter(); 
             } else {
                 combatState.playerTurn = false;
-                updateDisplay(); // Update monster HP display
-                renderCombatScreen(); // Re-render to show updated monster HP
-                setTimeout(monsterTurn, 1000); // Monster's turn after a delay
+                updateDisplay(); 
+                renderCombatScreen(); 
+                setTimeout(monsterTurn, 1000); 
             }
         }
 
         function playerUseSkill(skillName) { 
             if (!combatState.active || !combatState.playerTurn) return;
-            addLog(`Player Skill: ${skillName} - (Combat functionality not yet implemented).`, "player-skill");
-            // TODO: Implement skill effects, resource costs
-            // For now, just acts like a basic attack
-            playerAttack(); 
+            const skillDef = SKILL_DATA[skillName];
+            if(!skillDef) { addLog(`Unknown skill: ${skillName}`, 'error'); return; }
+
+            const currentSkillLevelData = skillDef.levels[player.skills[skillName]-1];
+            const resourceType = skillDef.resource;
+            const cost = ACTIVE_SKILL_USAGE_COSTS[skillDef.tier];
+
+            let currentResource;
+            if (resourceType === "Stamina") {
+                currentResource = player.derivedStats.currentStamina;
+            } else if (resourceType === "Mana") {
+                currentResource = player.derivedStats.currentMana;
+            }
+
+            if (currentResource < cost) {
+                addLog(`Not enough ${resourceType} to use ${skillName}.`, "warning");
+                changeState('inCombat'); 
+                return;
+            }
+
+            if (resourceType === "Stamina") {
+                player.derivedStats.currentStamina -= cost;
+            } else if (resourceType === "Mana") {
+                player.derivedStats.currentMana -= cost;
+            }
+            addLog(`Used ${cost} ${resourceType}.`, "info");
+
+
+            let baseSkillDamage = 0;
+            if (currentSkillLevelData.multiplier) { 
+                 const weaponName = player.equipment.weapon;
+                 const weapon = weaponName ? EQUIPMENT_DATA[weaponName] : { baseDmg: 2 }; 
+                 baseSkillDamage = (getPlayerTotalStat('STR') / 2 + (weapon.baseDmg || 0)) * currentSkillLevelData.multiplier;
+            } else if (currentSkillLevelData.focScale) { 
+                baseSkillDamage = getPlayerTotalStat('FOC') * currentSkillLevelData.focScale;
+            }
+            
+            const varianceAmount = baseSkillDamage * DAMAGE_VARIANCE;
+            let actualSkillDamage = baseSkillDamage + (Math.random() * varianceAmount * 2) - varianceAmount;
+
+            let skillCritChance = getPlayerTotalCritChance(skillDef); 
+            let isCrit = false;
+            if (Math.random() < skillCritChance) {
+                isCrit = true;
+                const critMultiplier = getPlayerTotalCritMultiplier();
+                actualSkillDamage *= critMultiplier;
+            }
+
+            actualSkillDamage = Math.max(1, Math.floor(actualSkillDamage - (combatState.currentMonster.defense || 0)));
+            
+            combatState.currentMonster.currentHp -= actualSkillDamage;
+            addLog(`You use ${skillName} on ${combatState.currentMonster.name} for ${actualSkillDamage} damage.${isCrit ? ' ✨ CRITICAL SKILL HIT! ✨' : ''}`, "player-skill");
+
+
+            if (combatState.currentMonster.currentHp <= 0) {
+                addLog(`${combatState.currentMonster.name} defeated!`, "victory");
+                if (combatState.currentMonster.loot && combatState.currentMonster.loot.length > 0) {
+                    if (Math.random() < MONSTER_ITEM_DROP_CHANCE) {
+                        const droppedItemName = combatState.currentMonster.loot[Math.floor(Math.random() * combatState.currentMonster.loot.length)];
+                        if (EQUIPMENT_DATA[droppedItemName]) {
+                            player.inventory.push(droppedItemName);
+                            addLog(`The ${combatState.currentMonster.name} dropped: ${droppedItemName}!`, "success");
+                        }
+                    }
+                }
+                player.tower.currentEncounterIndex++;
+                startNextEncounter(); 
+            } else {
+                combatState.playerTurn = false;
+                updateDisplay(); 
+                renderCombatScreen(); 
+                setTimeout(monsterTurn, 1000); 
+            }
         }
         function playerDefend() { 
             if (!combatState.active || !combatState.playerTurn) return;
             addLog("Player Defend - (Combat functionality not yet implemented). You brace for impact.", "info");
-            // TODO: Apply a 'Defending' status effect that reduces damage taken
             combatState.playerTurn = false;
             setTimeout(monsterTurn, 1000);
         }
 
         function monsterTurn() {
-            if (!combatState.active || combatState.playerTurn || combatState.currentMonster.currentHp <= 0) return;
-            addLog("Monster Turn - (Basic functionality, needs expansion).", "combat");
+            if (!combatState.active || combatState.playerTurn || !combatState.currentMonster || combatState.currentMonster.currentHp <= 0) return;
             
-            let monsterDamage = combatState.currentMonster.attack - (getPlayerTotalStat('END') / 3); // Simplified defense
-            monsterDamage = Math.max(1, Math.floor(monsterDamage));
+            const monster = combatState.currentMonster;
+            let abilityUsed = false;
 
-            player.derivedStats.currentHp -= monsterDamage;
-            addLog(`The ${combatState.currentMonster.name} attacks you for ${monsterDamage} damage.`, "error");
+            // Attempt to use a special ability
+            if (monster.abilities && monster.abilities.length > 0) {
+                for (const ability of monster.abilities) {
+                    if (Math.random() < (ability.chance || 0.3)) { // Default 30% chance if not specified
+                        if (ability.flavor) addLog(ability.flavor, 'info', 'right');
+                        
+                        // Basic Attack Modifier Ability
+                        if (ability.type === "Attack" && ability.damageMultiplier) {
+                            let baseMonsterDamage = monster.attack * ability.damageMultiplier;
+                            const varianceAmount = baseMonsterDamage * DAMAGE_VARIANCE;
+                            let actualMonsterDamage = baseMonsterDamage + (Math.random() * varianceAmount * 2) - varianceAmount;
+                            actualMonsterDamage -= (getPlayerTotalStat('END') / 3);
+                            actualMonsterDamage = Math.max(1, Math.floor(actualMonsterDamage));
+                            player.derivedStats.currentHp -= actualMonsterDamage;
+                            addLog(`The ${monster.name} uses ${ability.name} for ${actualMonsterDamage} damage!`, 'error', 'right');
+                            abilityUsed = true;
+                            break; 
+                        }
+                        // Self Buff Ability
+                        else if (ability.type === "BuffSelf" && ability.stat && ability.amount) {
+                             // Simple temporary buff - for now, just apply directly. Proper duration tracking needed.
+                            addLog(`The ${monster.name} uses ${ability.name}, bolstering its ${ability.stat}!`, 'info', 'right');
+                            // This is a simplified buff, ideally status effects would be managed properly
+                            // For now, we'll just log it. Full implementation would modify monster stats temporarily.
+                            abilityUsed = true;
+                            break;
+                        }
+                        // Attack with Debuff (placeholder for player status effects)
+                        else if (ability.type === "AttackDebuff" && ability.status) {
+                            let baseMonsterDamage = monster.attack * (ability.damageMultiplier || 1);
+                            const varianceAmount = baseMonsterDamage * DAMAGE_VARIANCE;
+                            let actualMonsterDamage = baseMonsterDamage + (Math.random() * varianceAmount * 2) - varianceAmount;
+                            actualMonsterDamage -= (getPlayerTotalStat('END') / 3);
+                            actualMonsterDamage = Math.max(1, Math.floor(actualMonsterDamage));
+                            player.derivedStats.currentHp -= actualMonsterDamage;
+                            addLog(`The ${monster.name} uses ${ability.name} for ${actualMonsterDamage} damage and attempts to inflict ${ability.status}!`, 'error', 'right');
+                            // TODO: Implement player status effect application
+                            // combatState.playerStatusEffects.push({name: ability.status, duration: ability.duration});
+                            abilityUsed = true;
+                            break;
+                        }
+                        // Add more ability types here
+                    }
+                }
+            }
+
+            // Basic attack if no ability was used
+            if (!abilityUsed) {
+                let baseMonsterDamage = monster.attack; 
+                const varianceAmount = baseMonsterDamage * DAMAGE_VARIANCE;
+                let actualMonsterDamage = baseMonsterDamage + (Math.random() * varianceAmount * 2) - varianceAmount;
+                actualMonsterDamage -= (getPlayerTotalStat('END') / 3); 
+                actualMonsterDamage = Math.max(1, Math.floor(actualMonsterDamage));
+                player.derivedStats.currentHp -= actualMonsterDamage;
+                addLog(`The ${monster.name} attacks you for ${actualMonsterDamage} damage.`, 'error', 'right');
+            }
+
 
             if (player.derivedStats.currentHp <= 0) {
                 player.derivedStats.currentHp = 0;
                 addLog("You have been defeated!", "error");
-                // Handle player defeat (e.g., return to tower menu, lose some GP/progress)
-                changeState('inTowerMenu'); // Simplified: just go back to tower menu
+                changeState('inTowerMenu'); 
             } else {
                 combatState.playerTurn = true;
                 updateDisplay();
-                renderCombatScreen(); // Re-render for player's turn
+                renderCombatScreen(); 
             }
         }
         
         function attemptToFlee() {
             if (!combatState.active) return;
             addLog("You attempt to flee...", "info");
-            // Simple flee mechanic for now
             const fleeChance = 0.5 + (getPlayerTotalStat('AGI') * 0.01) - (combatState.currentMonster.speed * 0.005);
             if (Math.random() < fleeChance) {
                 addLog("Successfully fled from combat!", "success");
@@ -1446,19 +1828,33 @@
             }
         }
 
+        function handlePassiveRegeneration() {
+            if (!player || !player.onboarding.lastRegenTimestamp) {
+                if (player) player.onboarding.lastRegenTimestamp = Date.now();
+                return;
+            }
+
+            const now = Date.now();
+            const timeElapsedInSeconds = (now - player.onboarding.lastRegenTimestamp) / 1000;
+
+            if (timeElapsedInSeconds <= 0) return;
+
+            const hpRegenPerSecond = player.derivedStats.maxHp / REGEN_TIME_FULL_SECONDS;
+            const staminaRegenPerSecond = player.derivedStats.maxStamina / REGEN_TIME_FULL_SECONDS;
+            const manaRegenPerSecond = player.derivedStats.maxMana / REGEN_TIME_FULL_SECONDS;
+
+            player.derivedStats.currentHp = Math.min(player.derivedStats.maxHp, player.derivedStats.currentHp + (timeElapsedInSeconds * hpRegenPerSecond));
+            player.derivedStats.currentStamina = Math.min(player.derivedStats.maxStamina, player.derivedStats.currentStamina + (timeElapsedInSeconds * staminaRegenPerSecond));
+            player.derivedStats.currentMana = Math.min(player.derivedStats.maxMana, player.derivedStats.currentMana + (timeElapsedInSeconds * manaRegenPerSecond));
+            
+            player.onboarding.lastRegenTimestamp = now;
+        }
+
 
         function changeState(newState) {
+            handlePassiveRegeneration(); 
+
             gameState = newState;
-            if (newState !== 'inCombat' && newState !== 'unlockingStat' && newState !== 'nameEntry' && newState !== 'selectingTarget') { 
-                if (player && player.derivedStats) { 
-                    calculateDerivedStats(); 
-                    if (newState !== 'inTowerMenu') { // Don't restore HP/Mana if just navigating tower menu
-                        player.derivedStats.currentHp = player.derivedStats.maxHp;
-                        player.derivedStats.currentStamina = player.derivedStats.maxStamina;
-                        player.derivedStats.currentMana = player.derivedStats.maxMana;
-                    }
-                }
-            }
             updateDisplay(); 
             switch (newState) {
                 case 'nameEntry': 
@@ -1474,7 +1870,10 @@
             }
         }
 
-        function updateDisplay() { updateStatsDisplay(); }
+        function updateDisplay() { 
+            handlePassiveRegeneration(); 
+            updateStatsDisplay(); 
+        }
         
         function manualSaveGame() { 
             saveGame();
@@ -1486,13 +1885,14 @@
             player.onboarding.dailyGpEarnedToday = dailyGpEarnedFromExercise; 
             player.characterScreenTab = characterScreenTab; 
             player.inventoryFilter = inventoryFilter; 
-            try { localStorage.setItem('fitForgePrototypeSave_v1_10_11', JSON.stringify(player)); } 
+            player.onboarding.lastRegenTimestamp = player.onboarding.lastRegenTimestamp || Date.now();
+            try { localStorage.setItem('fitForgePrototypeSave_v1_10_17', JSON.stringify(player)); } 
             catch (e) { console.error("Save Error:", e); addLog("Save failed.", "warning"); }
         }
 
         function loadGame() { 
             try {
-                const savedGame = localStorage.getItem('fitForgePrototypeSave_v1_10_11'); 
+                const savedGame = localStorage.getItem('fitForgePrototypeSave_v1_10_17'); 
                 if (savedGame) {
                     const loadedPlayer = JSON.parse(savedGame);
                     player = JSON.parse(JSON.stringify(initialPlayerState)); 
@@ -1510,7 +1910,7 @@
                     player.inventory = loadedPlayer.inventory || [];
                     player.potions = loadedPlayer.potions || {}; 
                     player.derivedStats = { ...initialPlayerState.derivedStats, ...(loadedPlayer.derivedStats || {}) }; 
-                    player.tower = { ...initialPlayerState.tower, ...(loadedPlayer.tower || {}) }; // Ensure tower progress is loaded
+                    player.tower = { ...initialPlayerState.tower, ...(loadedPlayer.tower || {}) }; 
                     player.onboarding = { ...initialPlayerState.onboarding, ...(loadedPlayer.onboarding || {}) };
                     player.respec = { ...initialPlayerState.respec, ...(loadedPlayer.respec || {}) };
 
@@ -1523,20 +1923,12 @@
                     } else {
                         dailyGpEarnedFromExercise = player.onboarding.dailyGpEarnedToday || 0; 
                     }
- 
-                    if (gameState !== 'inCombat' && player.onboarding.nameSet) { 
-                        calculateDerivedStats(); 
-                        // Don't fully restore if loading into a tower state later
-                        if (gameState !== 'inTowerMenu' && gameState !== 'inCombat') {
-                           player.derivedStats.currentHp = player.derivedStats.maxHp;
-                           player.derivedStats.currentStamina = player.derivedStats.maxStamina;
-                           player.derivedStats.currentMana = player.derivedStats.maxMana;
-                        } else if (player.derivedStats.currentHp === 0 && gameState === 'inTowerMenu') { // If loaded defeated in tower menu
-                            player.derivedStats.currentHp = 1; // Give 1 HP to not be stuck
-                        }
-                    }
+                    
+                    player.onboarding.lastRegenTimestamp = player.onboarding.lastRegenTimestamp || Date.now();
+                    handlePassiveRegeneration(); 
+
                     if(player.playerName && player.playerName !== "Recruit") gameHeader.textContent = `Fit Forge - ${player.playerName}`;
-                    addLog(`Game loaded (v1.10.11) for ${player.playerName}.`, "info");
+                    addLog(`Game loaded (v1.10.17) for ${player.playerName}.`, "info");
                 } else { initializeNewGame(); }
             } catch (e) {
                 console.error("Load Error:", e); addLog("Load failed, initializing new game.", "error");
@@ -1551,6 +1943,7 @@
             player.onboarding.canLevelStatsWithGP = false;
             player.onboarding.nameSet = false; 
             player.onboarding.tutorialStep = 0; 
+            player.onboarding.lastRegenTimestamp = Date.now(); 
 
             player.potions = {}; 
             dailyGpEarnedFromExercise = 0;
@@ -1588,7 +1981,6 @@
         window.handleRespec = handleRespec; 
         window.grantGp = grantGp;
         window.manualSaveGame = manualSaveGame;
-        // Combat related functions
         window.startTowerClimb = startTowerClimb;
         window.playerAttack = playerAttack;
         window.showSkillSelection = showSkillSelection;
@@ -1607,7 +1999,6 @@
                 inventoryFilter = player.inventoryFilter || 'All'; 
                 changeState('mainMenu'); 
             }
-            updateDisplay(); 
         };
     </script>
 </body>
