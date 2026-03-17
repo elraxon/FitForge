@@ -1220,6 +1220,29 @@
             renderShop(); 
         }
 
+        function applyPotionEffect(potionData) {
+            let restoredAmount = potionData.effect.amount;
+            let actuallyRestored = 0;
+
+            switch (potionData.effect.restore) {
+                case "HP":
+                    actuallyRestored = Math.min(restoredAmount, player.derivedStats.maxHp - player.derivedStats.currentHp);
+                    player.derivedStats.currentHp += actuallyRestored;
+                    break;
+                case "Stamina":
+                    actuallyRestored = Math.min(restoredAmount, player.derivedStats.maxStamina - player.derivedStats.currentStamina);
+                    player.derivedStats.currentStamina += actuallyRestored;
+                    break;
+                case "Mana":
+                    actuallyRestored = Math.min(restoredAmount, player.derivedStats.maxMana - player.derivedStats.currentMana);
+                    player.derivedStats.currentMana += actuallyRestored;
+                    break;
+                default:
+                    return null;
+            }
+            return actuallyRestored;
+        }
+
         function usePotionOutsideCombat(potionName) {
             const itemIndex = player.inventory.indexOf(potionName);
             if (itemIndex === -1) {
@@ -1232,36 +1255,15 @@
                 return;
             }
 
-            let restoredAmount = 0;
-            let actuallyRestored = 0;
-            let message = "";
+            let actuallyRestored = applyPotionEffect(potionData);
 
-            switch (potionData.effect.restore) {
-                case "HP":
-                    restoredAmount = potionData.effect.amount;
-                    actuallyRestored = Math.min(restoredAmount, player.derivedStats.maxHp - player.derivedStats.currentHp);
-                    player.derivedStats.currentHp += actuallyRestored;
-                    message = `Used ${potionName}. Restored ${actuallyRestored.toFixed(0)} HP.`;
-                    break;
-                case "Stamina":
-                    restoredAmount = potionData.effect.amount;
-                    actuallyRestored = Math.min(restoredAmount, player.derivedStats.maxStamina - player.derivedStats.currentStamina);
-                    player.derivedStats.currentStamina += actuallyRestored;
-                    message = `Used ${potionName}. Restored ${actuallyRestored.toFixed(0)} Stamina.`;
-                    break;
-                case "Mana":
-                    restoredAmount = potionData.effect.amount;
-                    actuallyRestored = Math.min(restoredAmount, player.derivedStats.maxMana - player.derivedStats.currentMana);
-                    player.derivedStats.currentMana += actuallyRestored;
-                    message = `Used ${potionName}. Restored ${actuallyRestored.toFixed(0)} Mana.`;
-                    break;
-                default:
-                    addLog(`Unknown effect for ${potionName}.`, "error");
-                    return;
+            if (actuallyRestored === null) {
+                addLog(`Unknown effect for ${potionName}.`, "error");
+                return;
             }
 
             if (actuallyRestored > 0) {
-                addLog(message, "success");
+                addLog(`Used ${potionName}. Restored ${actuallyRestored.toFixed(0)} ${potionData.effect.restore}.`, "success");
             } else {
                 addLog(`Used ${potionName}, but you were already full on ${potionData.effect.restore}.`, "info");
             }
@@ -1290,37 +1292,16 @@
                 return;
             }
 
-            let restoredAmount = 0;
-            let actuallyRestored = 0;
-            let message = "";
+            let actuallyRestored = applyPotionEffect(potionData);
 
-            switch (potionData.effect.restore) {
-                case "HP":
-                    restoredAmount = potionData.effect.amount;
-                    actuallyRestored = Math.min(restoredAmount, player.derivedStats.maxHp - player.derivedStats.currentHp);
-                    player.derivedStats.currentHp += actuallyRestored;
-                    message = `You use ${potionName}. Restored ${actuallyRestored.toFixed(0)} HP.`;
-                    break;
-                case "Stamina":
-                    restoredAmount = potionData.effect.amount;
-                    actuallyRestored = Math.min(restoredAmount, player.derivedStats.maxStamina - player.derivedStats.currentStamina);
-                    player.derivedStats.currentStamina += actuallyRestored;
-                    message = `You use ${potionName}. Restored ${actuallyRestored.toFixed(0)} Stamina.`;
-                    break;
-                case "Mana":
-                    restoredAmount = potionData.effect.amount;
-                    actuallyRestored = Math.min(restoredAmount, player.derivedStats.maxMana - player.derivedStats.currentMana);
-                    player.derivedStats.currentMana += actuallyRestored;
-                    message = `You use ${potionName}. Restored ${actuallyRestored.toFixed(0)} Mana.`;
-                    break;
-                default:
-                    addLog(`Unknown effect for ${potionName}.`, "error");
-                    changeState('inCombat');
-                    return;
+            if (actuallyRestored === null) {
+                addLog(`Unknown effect for ${potionName}.`, "error");
+                changeState('inCombat');
+                return;
             }
             
             if (actuallyRestored > 0) {
-                addLog(message, "success");
+                addLog(`You use ${potionName}. Restored ${actuallyRestored.toFixed(0)} ${potionData.effect.restore}.`, "success");
             } else {
                 addLog(`Used ${potionName}, but you were already full on ${potionData.effect.restore}.`, "info");
             }
