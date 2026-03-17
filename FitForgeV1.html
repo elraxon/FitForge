@@ -412,6 +412,7 @@
         const statsDisplay = document.getElementById('statsDisplay');
         const mainContent = document.getElementById('mainContent');
         const controls = document.getElementById('controls');
+        let lightMinutesInput, moderateMinutesInput, vigorousMinutesInput;
 
         function addLog(message, type = 'info', alignment = 'left') {
             console.log(`LOG (${type}): ${message}`);
@@ -700,10 +701,19 @@
                 <button onclick="submitExercise()">Submit Exercise</button>
                 <button onclick="changeState('mainMenu')">Back to Menu</button>
             `;
+
+            lightMinutesInput = document.getElementById('lightMinutes');
+            moderateMinutesInput = document.getElementById('moderateMinutes');
+            vigorousMinutesInput = document.getElementById('vigorousMinutes');
         }
 
         function adjustExerciseTime(inputId, amount) {
-            const inputElement = document.getElementById(inputId);
+            let inputElement;
+            if (inputId === 'lightMinutes') inputElement = lightMinutesInput;
+            else if (inputId === 'moderateMinutes') inputElement = moderateMinutesInput;
+            else if (inputId === 'vigorousMinutes') inputElement = vigorousMinutesInput;
+            else inputElement = document.getElementById(inputId);
+
             if (!inputElement) return;
             let currentValue = parseInt(inputElement.value) || 0;
             currentValue += amount;
@@ -1036,9 +1046,9 @@
         }
 
         function submitExercise() { 
-            const light = parseInt(document.getElementById('lightMinutes').value) || 0;
-            const moderate = parseInt(document.getElementById('moderateMinutes').value) || 0;
-            const vigorous = parseInt(document.getElementById('vigorousMinutes').value) || 0;
+            const light = parseInt(lightMinutesInput?.value) || 0;
+            const moderate = parseInt(moderateMinutesInput?.value) || 0;
+            const vigorous = parseInt(vigorousMinutesInput?.value) || 0;
 
             const totalMinutes = light + moderate + vigorous;
             if (totalMinutes <= 0) {
