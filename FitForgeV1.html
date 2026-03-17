@@ -1691,7 +1691,7 @@
                             player.derivedStats.currentHp -= actualMonsterDamage;
                             addLog(`The ${monster.name} uses ${ability.name} for ${actualMonsterDamage} damage and attempts to inflict ${ability.status}!`, 'error', 'right');
                             // TODO: Implement player status effect application
-                            // combatState.playerStatusEffects.push({name: ability.status, duration: ability.duration});
+                            combatState.playerStatusEffects.push({name: ability.status, duration: ability.duration});
                             abilityUsed = true;
                             break;
                         }
