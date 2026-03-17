@@ -310,6 +310,16 @@
             "Minor Mana Potion": { name: "Minor Mana Potion", type: "Potion", tier: 1, gp: 30, description: "A weak infusion that recovers a bit of magical energy.", effect: { restore: "Mana", amount: 15 } },
         };
 
+        const ITEMS_FOR_SALE_BY_TYPE = { 'All': [] };
+        Object.values(EQUIPMENT_DATA).forEach(item => {
+            if (item.gp <= 0 && item.name !== "Wooden Stick" && item.name !== "Tattered Loincloth") return;
+            ITEMS_FOR_SALE_BY_TYPE['All'].push(item);
+            if (!ITEMS_FOR_SALE_BY_TYPE[item.type]) {
+                ITEMS_FOR_SALE_BY_TYPE[item.type] = [];
+            }
+            ITEMS_FOR_SALE_BY_TYPE[item.type].push(item);
+        });
+
         const MONSTER_DATA_EXPANDED = {
             // Tier 0 (Floor 1-2)
             "Giant Rat": { name: "Giant Rat", tier: 0, hp: 15, attack: 3, defense: 1, speed: 10, abilities: [], gpReward: 0, loot: ["Worn Leather Boots", "Cloth Handwraps", "Minor Health Potion"], ai: "Mindless" }, 
@@ -897,11 +907,7 @@
                         <button class="${shopFilter === 'Potion' ? 'active' : ''}" onclick="setShopFilterTab('Potion')">Potions</button>
                         </div>`;
 
-            const itemsForSale = Object.values(EQUIPMENT_DATA).filter(item => {
-                if (item.gp <= 0 && item.name !== "Wooden Stick" && item.name !== "Tattered Loincloth") return false; // Don't show free items unless starter
-                if (shopFilter === 'All') return true;
-                return item.type === shopFilter;
-            }); 
+            const itemsForSale = ITEMS_FOR_SALE_BY_TYPE[shopFilter] || [];
 
             if (itemsForSale.length === 0) {
                 html += "<p>The Shop has no items matching this filter currently. Check back later!</p>";
