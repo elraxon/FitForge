@@ -1412,7 +1412,7 @@
             player.tower.currentEncounterIndex = 0;
             player.tower.floorMonsterInstances = []; 
 
-            const floorData = TOWER_FLOORS_DATA.find(f => f.floor === floorNumber);
+            const floorData = TOWER_FLOORS_DATA[floorNumber - 1];
             if (!floorData) {
                 addLog(`Error: Data for floor ${floorNumber} not found.`, 'error');
                 changeState('mainMenu');
@@ -1453,7 +1453,7 @@
         }
 
         function startNextEncounter() {
-            const floorData = TOWER_FLOORS_DATA.find(f => f.floor === player.tower.currentFloor);
+            const floorData = TOWER_FLOORS_DATA[player.tower.currentFloor - 1];
             if (!floorData || player.tower.currentEncounterIndex >= floorData.encounters.length) {
                 addLog(`Floor ${player.tower.currentFloor} cleared!`, "victory");
                 if (player.tower.currentFloor > player.tower.highestFloorCleared) {
