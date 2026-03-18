@@ -391,6 +391,7 @@
             },
             inventory: [], 
             potions: {}, 
+            bonuses: { STR: 0, END: 0, AGI: 0, FOC: 0 },
             derivedStats: { maxHp: 0, currentHp: 0, maxStamina: 0, currentStamina: 0, maxMana: 0, currentMana: 0 },
             tower: { highestFloorCleared: 0, currentFloor: 0, currentEncounterIndex: 0, floorMonsterInstances: [] }, 
             onboarding: { 
@@ -451,6 +452,42 @@
         
         function calculateDerivedStats() {
             if (!player) return; 
+
+            // Calculate and cache bonuses from equipment and skills
+            const stats = ['STR', 'END', 'AGI', 'FOC'];
+            player.bonuses = { STR: 0, END: 0, AGI: 0, FOC: 0 };
+
+            // Equipment Bonuses
+            for (const slot in player.equipment) {
+                const itemName = player.equipment[slot];
+                if (itemName && EQUIPMENT_DATA[itemName]) {
+                    const itemData = EQUIPMENT_DATA[itemName];
+                    stats.forEach(stat => {
+                        if (itemData[stat.toLowerCase()] !== undefined) {
+                            player.bonuses[stat] += itemData[stat.toLowerCase()];
+                        }
+                    });
+                }
+            }
+
+            // Skill Passive Bonuses
+            if (player.skills["Warriors Mettle"] && SKILL_DATA["Warriors Mettle"]) {
+                const skillLevel = player.skills["Warriors Mettle"];
+                if (skillLevel > 0) player.bonuses.STR += SKILL_DATA["Warriors Mettle"].levels[skillLevel -1].strBonus;
+            }
+            if (player.skills["Reinforced Vitality"] && SKILL_DATA["Reinforced Vitality"]) {
+                const skillLevel = player.skills["Reinforced Vitality"];
+                if (skillLevel > 0) player.bonuses.END += SKILL_DATA["Reinforced Vitality"].levels[skillLevel -1].endBonus;
+            }
+            if (player.skills["Fleet Footed"] && SKILL_DATA["Fleet Footed"]) {
+                const skillLevel = player.skills["Fleet Footed"];
+                if (skillLevel > 0) player.bonuses.AGI += SKILL_DATA["Fleet Footed"].levels[skillLevel -1].agiBonus;
+            }
+            if (player.skills["Inner Sight"] && SKILL_DATA["Inner Sight"]) {
+                const skillLevel = player.skills["Inner Sight"];
+                if (skillLevel > 0) player.bonuses.FOC += SKILL_DATA["Inner Sight"].levels[skillLevel -1].focBonus;
+            }
+
             player.derivedStats.maxHp = BASE_HP + (getPlayerTotalStat('END') * HP_FROM_END) + (getPlayerTotalStat('STR') * HP_FROM_STR);
             player.derivedStats.maxStamina = BASE_STAMINA + (getPlayerTotalStat('END') * 5) + (getPlayerTotalStat('AGI') * 7); 
             player.derivedStats.maxMana = BASE_MANA + (getPlayerTotalStat('FOC') * 8) + (getPlayerTotalStat('END') * 3); 
@@ -532,51 +569,19 @@
             }
         }
         
-        function getPlayerStatBonusFromEquipment(statName) {
-            let bonus = 0;
-            for (const slot in player.equipment) {
-                const itemName = player.equipment[slot];
-                if (itemName && EQUIPMENT_DATA[itemName]) {
-                    const itemData = EQUIPMENT_DATA[itemName];
-                    if (itemData[statName.toLowerCase()] !== undefined) { 
-                        bonus += itemData[statName.toLowerCase()];
-                    }
-                }
-            }
-            return bonus;
-        }
-
         function getPlayerTotalStat(statName) { 
             if (!player || !player.stats) return 0; 
             let baseStat = player.stats[statName] || 0;
-            let equipBonus = getPlayerStatBonusFromEquipment(statName);
-            let skillBonus = 0; 
-            
-            if (statName === 'STR' && player.skills["Warriors Mettle"] && SKILL_DATA["Warriors Mettle"]) {
-                const skillLevel = player.skills["Warriors Mettle"];
-                if (skillLevel > 0) skillBonus += SKILL_DATA["Warriors Mettle"].levels[skillLevel -1].strBonus;
-            }
-             if (statName === 'END' && player.skills["Reinforced Vitality"] && SKILL_DATA["Reinforced Vitality"]) {
-                const skillLevel = player.skills["Reinforced Vitality"];
-                if (skillLevel > 0) skillBonus += SKILL_DATA["Reinforced Vitality"].levels[skillLevel -1].endBonus;
-            }
-            if (statName === 'AGI' && player.skills["Fleet Footed"] && SKILL_DATA["Fleet Footed"]) {
-                const skillLevel = player.skills["Fleet Footed"];
-                if (skillLevel > 0) skillBonus += SKILL_DATA["Fleet Footed"].levels[skillLevel -1].agiBonus;
-            }
-            if (statName === 'FOC' && player.skills["Inner Sight"] && SKILL_DATA["Inner Sight"]) {
-                const skillLevel = player.skills["Inner Sight"];
-                if (skillLevel > 0) skillBonus += SKILL_DATA["Inner Sight"].levels[skillLevel -1].focBonus;
-            }
+            let bonus = (player.bonuses && player.bonuses[statName]) || 0;
             
             if (combatState && combatState.playerStatusEffects) { 
                 const surgeEffect = combatState.playerStatusEffects.find(eff => eff.name === "Adrenaline Surge Buff");
                 if (surgeEffect && statName === 'STR') { 
-                    // skillBonus += surgeEffect.strBonus; 
+                    // bonus += surgeEffect.strBonus;
                 }
             }
 
-            return baseStat + equipBonus + skillBonus;
+            return baseStat + bonus;
         }
 
         function getItemStatString(item) {
