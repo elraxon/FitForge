@@ -447,8 +447,6 @@
             }
         }
 
-        function d10() { return Math.floor(Math.random() * 10) + 1; }
-        
         function calculateDerivedStats() {
             if (!player) return; 
             player.derivedStats.maxHp = BASE_HP + (getPlayerTotalStat('END') * HP_FROM_END) + (getPlayerTotalStat('STR') * HP_FROM_STR);
