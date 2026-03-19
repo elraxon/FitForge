@@ -580,10 +580,19 @@
                 if (skillLevel > 0) skillBonus += SKILL_DATA["Inner Sight"].levels[skillLevel -1].focBonus;
             }
             
-            if (combatState && combatState.playerStatusEffects) { 
-                const surgeEffect = combatState.playerStatusEffects.find(eff => eff.name === "Adrenaline Surge Buff");
-                if (surgeEffect && statName === 'STR') { 
-                    // skillBonus += surgeEffect.strBonus; 
+            if (combatState && combatState.playerStatusEffects) {
+                for (const effect of combatState.playerStatusEffects) {
+                    if (effect.stat && effect.amount) {
+                        if (effect.stat === 'all' && ['STR', 'END', 'AGI', 'FOC'].includes(statName)) {
+                            skillBonus += effect.amount;
+                        } else if (effect.stat === 'attack' && statName === 'STR') {
+                            skillBonus += effect.amount;
+                        } else if (effect.stat === 'defense' && statName === 'END') {
+                            skillBonus += effect.amount;
+                        } else if (effect.stat === statName) {
+                            skillBonus += effect.amount;
+                        }
+                    }
                 }
             }
 
@@ -1340,9 +1349,7 @@
             saveGame();
             updateDisplay();
 
-            combatState.playerTurn = false;
-            renderCombatScreen(); 
-            setTimeout(monsterTurn, 1000);
+            endPlayerTurn();
         }
         
         function equipItemFromInventoryWrapper(itemName) {
@@ -1569,10 +1576,7 @@
                 player.tower.currentEncounterIndex++;
                 startNextEncounter(); 
             } else {
-                combatState.playerTurn = false;
-                updateDisplay(); 
-                renderCombatScreen(); 
-                setTimeout(monsterTurn, 1000); 
+                endPlayerTurn();
             }
         }
 
@@ -1646,16 +1650,65 @@
                 player.tower.currentEncounterIndex++;
                 startNextEncounter(); 
             } else {
-                combatState.playerTurn = false;
-                updateDisplay(); 
-                renderCombatScreen(); 
-                setTimeout(monsterTurn, 1000); 
+                endPlayerTurn();
             }
         }
         function playerDefend() { 
             if (!combatState.active || !combatState.playerTurn) return;
             addLog("Player Defend - (Combat functionality not yet implemented). You brace for impact.", "info");
+            endPlayerTurn();
+        }
+
+        function startPlayerTurn() {
+            if (!combatState.active || player.derivedStats.currentHp <= 0) return;
+
+            combatState.playerTurn = true;
+            let skipTurn = false;
+
+            if (combatState.playerStatusEffects && combatState.playerStatusEffects.length > 0) {
+                for (const effect of combatState.playerStatusEffects) {
+                    if (effect.damagePerTurn) {
+                        player.derivedStats.currentHp -= effect.damagePerTurn;
+                        addLog(`You take ${effect.damagePerTurn} damage from ${effect.name}.`, 'error');
+                        if (player.derivedStats.currentHp <= 0) {
+                            player.derivedStats.currentHp = 0;
+                            addLog("You have been defeated!", "error");
+                            changeState('inTowerMenu');
+                            return;
+                        }
+                    }
+                    if (effect.name === "Stun") {
+                        addLog("You are stunned and cannot act!", "warning");
+                        skipTurn = true;
+                    }
+                }
+            }
+
+            if (skipTurn) {
+                endPlayerTurn();
+            } else {
+                updateDisplay();
+                renderCombatScreen();
+            }
+        }
+
+        function endPlayerTurn() {
+            if (!combatState.active) return;
+
             combatState.playerTurn = false;
+
+            if (combatState.playerStatusEffects && combatState.playerStatusEffects.length > 0) {
+                for (let i = combatState.playerStatusEffects.length - 1; i >= 0; i--) {
+                    combatState.playerStatusEffects[i].duration--;
+                    if (combatState.playerStatusEffects[i].duration <= 0) {
+                        addLog(`${combatState.playerStatusEffects[i].name} has worn off.`, 'info');
+                        combatState.playerStatusEffects.splice(i, 1);
+                    }
+                }
+            }
+
+            updateDisplay();
+            renderCombatScreen();
             setTimeout(monsterTurn, 1000);
         }
 
@@ -1701,8 +1754,11 @@
                             actualMonsterDamage = Math.max(1, Math.floor(actualMonsterDamage));
                             player.derivedStats.currentHp -= actualMonsterDamage;
                             addLog(`The ${monster.name} uses ${ability.name} for ${actualMonsterDamage} damage and attempts to inflict ${ability.status}!`, 'error', 'right');
-                            // TODO: Implement player status effect application
-                            // combatState.playerStatusEffects.push({name: ability.status, duration: ability.duration});
+                            let statusEffect = {name: ability.status, duration: ability.duration};
+                            if (ability.status === "Poison") {
+                                statusEffect.damagePerTurn = 2; // Default poison damage
+                            }
+                            combatState.playerStatusEffects.push(statusEffect);
                             abilityUsed = true;
                             break;
                         }
@@ -1728,9 +1784,7 @@
                 addLog("You have been defeated!", "error");
                 changeState('inTowerMenu'); 
             } else {
-                combatState.playerTurn = true;
-                updateDisplay();
-                renderCombatScreen(); 
+                startPlayerTurn();
             }
         }
         
@@ -1743,8 +1797,7 @@
                 changeState('inTowerMenu');
             } else {
                 addLog("Failed to flee!", "warning");
-                combatState.playerTurn = false;
-                setTimeout(monsterTurn, 1000);
+                endPlayerTurn();
             }
         }
 
