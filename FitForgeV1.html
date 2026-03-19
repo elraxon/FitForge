@@ -413,6 +413,19 @@
         const mainContent = document.getElementById('mainContent');
         const controls = document.getElementById('controls');
 
+        function escapeHTML(str) {
+            if (!str) return "";
+            return str.replace(/[&<>"']/g, function(m) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                }[m];
+            });
+        }
+
         function addLog(message, type = 'info', alignment = 'left') {
             console.log(`LOG (${type}): ${message}`);
             const p = document.createElement('p');
@@ -617,11 +630,11 @@
                  return; 
             }
 
-            mainContent.innerHTML = `<h2>Main Menu - ${player.playerName}</h2>`;
+            mainContent.innerHTML = `<h2>Main Menu - ${escapeHTML(player.playerName)}</h2>`;
             if (player.onboarding.tutorialStep === 0) { 
                 mainContent.innerHTML += `<div class="intro-text">
                     <p>The air in the old training hall is thick with dust and the scent of forgotten effort. Echoes of past warriors linger. You stand at a precipice, a new trainee, but with a potential few understand...</p>
-                    <p>An old Master approaches. "Welcome, ${player.playerName}. Many come to this tower seeking power, but few grasp its true source. It is not merely will, nor just skill with a blade. True strength is forged in the crucible of exertion, in the very pulse of your own vitality."</p>
+                    <p>An old Master approaches. "Welcome, ${escapeHTML(player.playerName)}. Many come to this tower seeking power, but few grasp its true source. It is not merely will, nor just skill with a blade. True strength is forged in the crucible of exertion, in the very pulse of your own vitality."</p>
                     <p>"Your training begins not with a sword, but with a single step. Prove your commitment. Channel your physical efforts from your world, and let us see what potential awakens within you. Please, <strong>Log Your First Exercise</strong>."</p>
                 </div>`;
             } else if (player.onboarding.tutorialStep === 1 && player.onboarding.statsUnlockedCount < 4) { 
@@ -630,7 +643,7 @@
                  mainContent.innerHTML += `<p class="info">Tutorial: Visit 'Character' screen. Try learning 'Power Strike' under the 'Skills' tab. Then, go to the main menu to test your might in the 'Tower Climb'!</p>`;
             }
             else {
-                 mainContent.innerHTML += `<p>What would you like to do, ${player.playerName}?</p>`;
+                 mainContent.innerHTML += `<p>What would you like to do, ${escapeHTML(player.playerName)}?</p>`;
             }
 
             controls.innerHTML = `
@@ -710,7 +723,7 @@
         }
         
         function renderCharacterScreen() {
-            mainContent.innerHTML = `<h2>Character - ${player.playerName}</h2>`; 
+            mainContent.innerHTML = `<h2>Character - ${escapeHTML(player.playerName)}</h2>`;
             controls.innerHTML = `
                 <div class="button-grid tab-buttons">
                     <button class="${characterScreenTab === 'Stats' ? 'active' : ''}" onclick="setCharacterScreenTab('Stats')">Stats</button>
@@ -749,7 +762,7 @@
         function renderCharacterScreenContent() {
             let html = ''; 
             let existingH2 = mainContent.querySelector('h2');
-            mainContent.innerHTML = existingH2 ? existingH2.outerHTML : `<h2>Character - ${player.playerName}</h2>`;
+            mainContent.innerHTML = existingH2 ? existingH2.outerHTML : `<h2>Character - ${escapeHTML(player.playerName)}</h2>`;
 
 
             if (characterScreenTab === 'Stats') {
