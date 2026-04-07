@@ -224,6 +224,19 @@
   </div>
 
     <script>
+        function escapeHTML(str) {
+            if (!str) return "";
+            return str.replace(/[&<>"']/g, function(m) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                }[m];
+            });
+        }
+
         // --- GAME DATA DEFINITIONS ---
         const BASE_HP = 15; 
         const HP_FROM_END = 8; 
