@@ -557,6 +557,11 @@
             return bonus;
         }
 
+        function applyDamageVariance(baseDamage) {
+            const varianceAmount = baseDamage * DAMAGE_VARIANCE;
+            return baseDamage + (Math.random() * varianceAmount * 2) - varianceAmount;
+        }
+
         function getPlayerTotalStat(statName) { 
             if (!player || !player.stats) return 0; 
             let baseStat = player.stats[statName] || 0;
@@ -1535,8 +1540,7 @@
             const weapon = weaponName ? EQUIPMENT_DATA[weaponName] : { baseDmg: 2 }; 
             let basePlayerDamage = (getPlayerTotalStat('STR') / 2) + (weapon.baseDmg || 0); 
             
-            const varianceAmount = basePlayerDamage * DAMAGE_VARIANCE;
-            let actualPlayerDamage = basePlayerDamage + (Math.random() * varianceAmount * 2) - varianceAmount;
+            let actualPlayerDamage = applyDamageVariance(basePlayerDamage);
 
             const critChance = getPlayerTotalCritChance();
             let isCrit = false;
@@ -1615,8 +1619,7 @@
                 baseSkillDamage = getPlayerTotalStat('FOC') * currentSkillLevelData.focScale;
             }
             
-            const varianceAmount = baseSkillDamage * DAMAGE_VARIANCE;
-            let actualSkillDamage = baseSkillDamage + (Math.random() * varianceAmount * 2) - varianceAmount;
+            let actualSkillDamage = applyDamageVariance(baseSkillDamage);
 
             let skillCritChance = getPlayerTotalCritChance(skillDef); 
             let isCrit = false;
@@ -1674,8 +1677,7 @@
                         // Basic Attack Modifier Ability
                         if (ability.type === "Attack" && ability.damageMultiplier) {
                             let baseMonsterDamage = monster.attack * ability.damageMultiplier;
-                            const varianceAmount = baseMonsterDamage * DAMAGE_VARIANCE;
-                            let actualMonsterDamage = baseMonsterDamage + (Math.random() * varianceAmount * 2) - varianceAmount;
+                            let actualMonsterDamage = applyDamageVariance(baseMonsterDamage);
                             actualMonsterDamage -= (getPlayerTotalStat('END') / 3);
                             actualMonsterDamage = Math.max(1, Math.floor(actualMonsterDamage));
                             player.derivedStats.currentHp -= actualMonsterDamage;
@@ -1695,8 +1697,7 @@
                         // Attack with Debuff (placeholder for player status effects)
                         else if (ability.type === "AttackDebuff" && ability.status) {
                             let baseMonsterDamage = monster.attack * (ability.damageMultiplier || 1);
-                            const varianceAmount = baseMonsterDamage * DAMAGE_VARIANCE;
-                            let actualMonsterDamage = baseMonsterDamage + (Math.random() * varianceAmount * 2) - varianceAmount;
+                            let actualMonsterDamage = applyDamageVariance(baseMonsterDamage);
                             actualMonsterDamage -= (getPlayerTotalStat('END') / 3);
                             actualMonsterDamage = Math.max(1, Math.floor(actualMonsterDamage));
                             player.derivedStats.currentHp -= actualMonsterDamage;
@@ -1714,8 +1715,7 @@
             // Basic attack if no ability was used
             if (!abilityUsed) {
                 let baseMonsterDamage = monster.attack; 
-                const varianceAmount = baseMonsterDamage * DAMAGE_VARIANCE;
-                let actualMonsterDamage = baseMonsterDamage + (Math.random() * varianceAmount * 2) - varianceAmount;
+                let actualMonsterDamage = applyDamageVariance(baseMonsterDamage);
                 actualMonsterDamage -= (getPlayerTotalStat('END') / 3); 
                 actualMonsterDamage = Math.max(1, Math.floor(actualMonsterDamage));
                 player.derivedStats.currentHp -= actualMonsterDamage;
