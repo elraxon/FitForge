@@ -544,6 +544,7 @@
         }
         
         function getPlayerStatBonusFromEquipment(statName) {
+            if (!player || !player.equipment) return 0;
             let bonus = 0;
             for (const slot in player.equipment) {
                 const itemName = player.equipment[slot];
