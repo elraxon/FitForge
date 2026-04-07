@@ -278,6 +278,15 @@
             "Energy Cascade": { name: "Energy Cascade", class: "Arcanist", tier: 3, type: "Active", resource: "Mana", description: "Powerful energy blast, stronger against debuffed targets.", prerequisites: { FOC: 15, "Weakening Hex": 3, "Arcane Potency": 1 }, cooldown: 2, levels: [{ level: 1, effectText: "Deals (FOC * 3.5) energy damage. +25% DMG vs debuffed.", focScale: 3.5, debuffBonus: 0.25 },{ level: 2, effectText: "Deals (FOC * 4.0) energy damage. +30% DMG vs debuffed.", focScale: 4.0, debuffBonus: 0.30 },{ level: 3, effectText: "Deals (FOC * 4.5) energy damage. +35% DMG vs debuffed. Cooldown reduced by 1.", focScale: 4.5, debuffBonus: 0.35, cooldownReduction: 1 }]}
         };
 
+        const SKILLS_BY_CLASS = {};
+        Object.values(SKILL_DATA).forEach(skill => {
+            if (!SKILLS_BY_CLASS[skill.class]) SKILLS_BY_CLASS[skill.class] = [];
+            SKILLS_BY_CLASS[skill.class].push(skill);
+        });
+        for (const className in SKILLS_BY_CLASS) {
+            SKILLS_BY_CLASS[className].sort((a, b) => a.tier - b.tier || a.name.localeCompare(b.name));
+        }
+
         const EQUIPMENT_DATA = {
             // Tier 0 (Starter)
             "Wooden Stick":     { name: "Wooden Stick", type: "Weapon", tier: 0, str: 1, baseDmg: 4, gp: 0, description: "A sturdy piece of wood." },
@@ -780,15 +789,9 @@
                 });
             } else if (characterScreenTab === 'Skills') {
                 html += `<h3>Skills</h3>`;
-                const skillsByClass = {};
-                Object.values(SKILL_DATA).forEach(skill => {
-                    if (!skillsByClass[skill.class]) skillsByClass[skill.class] = [];
-                    skillsByClass[skill.class].push(skill);
-                });
-
-                for (const className in skillsByClass) {
+                for (const className in SKILLS_BY_CLASS) {
                     html += `<h4>${className}</h4>`;
-                    skillsByClass[className].sort((a,b) => a.tier - b.tier || a.name.localeCompare(b.name)).forEach(skill => { 
+                    SKILLS_BY_CLASS[className].forEach(skill => {
                         const currentLevel = player.skills[skill.name] || 0;
                         let prereqText = "";
                         let canLearn = true; 
