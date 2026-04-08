@@ -389,6 +389,12 @@
                 boots: null, 
                 amulet: null 
             },
+            equipmentStatCache: {
+                str: 0,
+                end: 0,
+                agi: 0,
+                foc: 0
+            },
             inventory: [], 
             potions: {}, 
             derivedStats: { maxHp: 0, currentHp: 0, maxStamina: 0, currentStamina: 0, maxMana: 0, currentMana: 0 },
@@ -502,6 +508,7 @@
             }
             
             player.equipment[targetSlot] = itemName;
+            updateEquipmentStatCache();
             console.log(`[EQUIP] Set ${targetSlot} to ${itemName}. Equipment:`, JSON.stringify(player.equipment));
 
             const invIndex = player.inventory.indexOf(itemName);
@@ -532,6 +539,7 @@
                     console.log(`[UNEQUIP] Added ${itemName} to inventory. Inventory:`, JSON.stringify(player.inventory));
                 }
                 player.equipment[slot] = null;
+                updateEquipmentStatCache();
                 addLog(`Unequipped ${itemName} from ${slot}.`, 'info');
                 console.log(`[UNEQUIP] Slot ${slot} cleared. Equipment:`, JSON.stringify(player.equipment));
                 calculateDerivedStats();
@@ -543,18 +551,33 @@
             }
         }
         
-        function getPlayerStatBonusFromEquipment(statName) {
-            let bonus = 0;
+        function updateEquipmentStatCache() {
+            if (!player.equipmentStatCache) {
+                player.equipmentStatCache = { str: 0, end: 0, agi: 0, foc: 0 };
+            } else {
+                player.equipmentStatCache.str = 0;
+                player.equipmentStatCache.end = 0;
+                player.equipmentStatCache.agi = 0;
+                player.equipmentStatCache.foc = 0;
+            }
+
             for (const slot in player.equipment) {
                 const itemName = player.equipment[slot];
                 if (itemName && EQUIPMENT_DATA[itemName]) {
                     const itemData = EQUIPMENT_DATA[itemName];
-                    if (itemData[statName.toLowerCase()] !== undefined) { 
-                        bonus += itemData[statName.toLowerCase()];
-                    }
+                    if (itemData.str) player.equipmentStatCache.str += itemData.str;
+                    if (itemData.end) player.equipmentStatCache.end += itemData.end;
+                    if (itemData.agi) player.equipmentStatCache.agi += itemData.agi;
+                    if (itemData.foc) player.equipmentStatCache.foc += itemData.foc;
                 }
             }
-            return bonus;
+        }
+
+        function getPlayerStatBonusFromEquipment(statName) {
+            if (!player.equipmentStatCache) {
+                updateEquipmentStatCache();
+            }
+            return player.equipmentStatCache[statName.toLowerCase()] || 0;
         }
 
         function getPlayerTotalStat(statName) { 
@@ -1827,6 +1850,7 @@
                     player.stats = { ...initialPlayerState.stats, ...(loadedPlayer.stats || {}) };
                     player.skills = { ...initialPlayerState.skills, ...(loadedPlayer.skills || {}) };
                     player.equipment = { ...initialPlayerState.equipment, ...(loadedPlayer.equipment || {}) };
+                    updateEquipmentStatCache();
                     player.inventory = loadedPlayer.inventory || [];
                     player.potions = loadedPlayer.potions || {}; 
                     player.derivedStats = { ...initialPlayerState.derivedStats, ...(loadedPlayer.derivedStats || {}) }; 
@@ -1871,6 +1895,7 @@
             player.onboarding.dailyGpEarnedToday = 0; 
             
             player.equipment = JSON.parse(JSON.stringify(initialPlayerState.equipment));
+            updateEquipmentStatCache();
             inventoryFilter = 'All'; 
 
             calculateDerivedStats(); 
