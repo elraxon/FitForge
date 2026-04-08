@@ -583,7 +583,7 @@
             if (combatState && combatState.playerStatusEffects) { 
                 const surgeEffect = combatState.playerStatusEffects.find(eff => eff.name === "Adrenaline Surge Buff");
                 if (surgeEffect && statName === 'STR') { 
-                    // skillBonus += surgeEffect.strBonus; 
+                    skillBonus += surgeEffect.strBonus;
                 }
             }
 
